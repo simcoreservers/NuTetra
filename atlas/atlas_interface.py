@@ -7,6 +7,7 @@ import os
 import time
 import logging
 import threading
+import random
 from typing import Dict, Any, Optional, List, Tuple
 
 logger = logging.getLogger("NuTetra.Atlas")
@@ -238,7 +239,6 @@ class AtlasInterface:
         """
         if self.simulation_mode:
             # Simulate pH between 5.5 and 7.0 with some noise
-            import random
             return round(6.0 + random.uniform(-0.5, 1.0), 2)
         
         try:
@@ -260,7 +260,6 @@ class AtlasInterface:
         """
         if self.simulation_mode:
             # Simulate EC between 1.0 and 2.0 with some noise
-            import random
             return round(1.5 + random.uniform(-0.5, 0.5), 2)
         
         try:
@@ -284,7 +283,6 @@ class AtlasInterface:
         """
         if self.simulation_mode:
             # Simulate TDS between 500 and 1000 ppm with some noise
-            import random
             return int(750 + random.uniform(-250, 250))
         
         try:
@@ -313,7 +311,6 @@ class AtlasInterface:
         """
         if self.simulation_mode:
             # Simulate temperature between 20 and 25°C with some noise
-            import random
             return round(22.5 + random.uniform(-2.5, 2.5), 1)
         
         try:

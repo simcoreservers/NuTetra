@@ -14,13 +14,18 @@ logger = logging.getLogger("NuTetra.Config")
 class ConfigManager:
     """Manages system configuration storage and retrieval"""
     
-    def __init__(self, config_path: str = "/NuTetra/config/config.json"):
+    def __init__(self, config_path: Optional[str] = None):
         """Initialize the configuration manager
         
         Args:
-            config_path: Path to the configuration file
+            config_path: Path to the configuration file (optional)
         """
-        self.config_path = config_path
+        # Set default path if none provided
+        if config_path is None:
+            self.config_path = "/NuTetra/config/config.json"
+        else:
+            self.config_path = config_path
+            
         self.config = {}
         
         # Ensure config directory exists

@@ -1,0 +1,21 @@
+{
+    "system": {
+        "name": "NuTetra",
+        "version": "1.0.0",
+        "log_level": "INFO",
+        "data_dir": "/NuTetra/data"
+    },
+    "dosing": {
+        "auto_dosing_enabled": true
+    },
+    "gpio": {
+        "simulation_mode": true
+    },
+    "i2c": {
+        "bus": 1,
+        "enabled": true,
+        "ph_address": 99,
+        "ec_address": 100,
+        "temp_address": 102
+    }
+} 

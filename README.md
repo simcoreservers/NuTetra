@@ -1,34 +1,30 @@
-# nutetra Hydroponic Automation System
+# NuTetra Hydroponic System
 
-The nutetra Hydroponic Automation System is a web-based application designed to monitor and control hydroponic systems. It provides real-time monitoring of pH, EC, temperature, and automated dosing to maintain optimal growing conditions.
-
-![nutetra Dashboard](web/static/img/dashboard-preview.png)
+A comprehensive automation system for hydroponic growing, featuring pH and EC monitoring, automated nutrient dosing, and a web interface for control and monitoring.
 
 ## Features
 
-- Real-time monitoring of pH, EC, and temperature sensors
-- Automated dosing of pH adjusters and nutrients
-- Manual pump controls for maintenance
-- Customizable dosing schedules and settings
-- Visual alerts and system status monitoring
-- Mobile-friendly responsive web interface
+- **Sensor Monitoring**: pH, EC/TDS, and temperature monitoring with Atlas Scientific sensors
+- **Automated Dosing**: Precise dosing of pH adjusters and nutrients based on readings
+- **Web Interface**: Browser-based control panel accessible from any device
+- **Configurable Alerts**: Get notified when readings are outside acceptable ranges
+- **Data Logging**: Track system performance over time
+- **Calibration Tools**: Easy sensor and pump calibration
 
 ## Hardware Requirements
 
-- Raspberry Pi 5 (recommended) or compatible single-board computer
-- pH sensor
-- EC (Electrical Conductivity) sensor
-- Temperature sensor
+- Raspberry Pi (4 or 5 recommended)
+- Atlas Scientific pH, EC, and temperature sensors with EZO circuits
 - Peristaltic pumps for dosing
-- Main circulation pump
+- I2C interface for sensor communication
 
 ## Installation
 
-### Easy Installation (Recommended)
+### Option 1: Automated Installation (recommended)
 
 1. Clone this repository:
    ```
-   git clone https://github.com/simcoreservers/nutetra.git
+   git clone https://github.com/yourusername/nutetra.git
    cd nutetra
    ```
 
@@ -37,81 +33,125 @@ The nutetra Hydroponic Automation System is a web-based application designed to 
    sudo bash install.sh
    ```
 
-3. Follow the prompts to complete installation. The script will:
-   - Install system dependencies
-   - Set up Python virtual environment
-   - Install Python dependencies
-   - Configure the system to start automatically on boot
-   - Optionally set up Chromium in kiosk mode
-
-4. After installation, the web interface will be accessible at:
+3. Access the web interface:
    ```
-   http://localhost:5000
+   http://your-pi-ip:5000
    ```
 
-### Manual Installation
+### Option 2: Manual Installation
 
-If you prefer to install manually:
-
-1. Install system dependencies:
+1. Clone this repository:
    ```
-   sudo apt-get update
-   sudo apt-get install -y python3 python3-pip python3-venv chromium-browser
+   git clone https://github.com/yourusername/nutetra.git
+   cd nutetra
    ```
 
-2. Create a Python virtual environment:
+2. Create required directories:
    ```
-   python3 -m venv venv
-   source venv/bin/activate
+   sudo mkdir -p /NuTetra/logs /NuTetra/data /NuTetra/config /NuTetra/exports
+   sudo chmod -R 777 /NuTetra
    ```
 
-3. Install Python dependencies:
+3. Install dependencies:
    ```
-   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-4. Start the application:
+4. Run the application:
    ```
    python web/start.py
    ```
 
-## Usage
-
-### Web Interface
-
-Access the web interface at `http://localhost:5000` or the IP address of your device.
-
-The main dashboard provides:
-- Current pH, EC, and temperature readings with status indicators
-- Pump status display
-- System status and alerts
-
-### Pages
-
-- **Dashboard**: Main monitoring view
-- **Dosing Settings**: Configure target values and dosing parameters
-- **Pump Control**: Manually control pumps for maintenance
-- **Alerts**: View and manage system alerts
-- **Logs**: Review system logs and data history
-- **System Settings**: Configure system-wide settings
+5. Access the web interface:
+   ```
+   http://your-pi-ip:5000
+   ```
 
 ## Configuration
 
-All configuration is done through the web interface. Key settings:
+Configuration is stored in `/NuTetra/config/config.json`. The system will create a default configuration if none exists.
 
-- **Target Values**: Set desired pH and EC levels, with tolerance ranges
-- **Dosing Schedule**: Configure when and how often the system checks and adjusts levels
-- **Pump Calibration**: Set flow rates for accurate dosing
-- **Dosing Limits**: Set safety limits for chemical additions
+Key configuration sections:
+
+- **System**: General system settings
+- **I2C**: Sensor addresses and communication settings
+- **Pumps**: Pump pin assignments and flow rates
+- **Dosing**: Dosing controller settings, target values, and tolerances
+- **Alerts**: Alert thresholds and notification settings
+
+All configurations can be modified through the web interface.
+
+## Troubleshooting
+
+### "System manager not initialized" error
+
+If you see this error, check the following:
+
+1. Ensure all required directories exist and are writable:
+   ```
+   sudo mkdir -p /NuTetra/logs /NuTetra/data /NuTetra/config /NuTetra/exports
+   sudo chmod -R 777 /NuTetra
+   ```
+
+2. Create a basic configuration file:
+   ```
+   mkdir -p /NuTetra/config
+   echo '{"system":{"name":"NuTetra"},"gpio":{"simulation_mode":true}}' > /NuTetra/config/config.json
+   ```
+
+3. Check the logs for specific errors:
+   ```
+   cat /NuTetra/logs/nutetra.log
+   ```
+
+### Sensor Connection Issues
+
+If sensors aren't responding:
+
+1. Enable I2C on your Raspberry Pi:
+   ```
+   sudo raspi-config
+   ```
+   Navigate to Interface Options > I2C > Enable
+
+2. Check your I2C connections with:
+   ```
+   i2cdetect -y 1
+   ```
+
+3. Edit your config to enable simulation mode for testing:
+   ```
+   nano /NuTetra/config/config.json
+   ```
+   Add `"simulation_mode": true` to the gpio section
+
+### Service Issues
+
+If running as a service and encountering problems:
+
+1. Check service status:
+   ```
+   sudo systemctl status nutetra.service
+   ```
+
+2. View logs:
+   ```
+   sudo journalctl -u nutetra.service -f
+   ```
+
+3. Restart the service:
+   ```
+   sudo systemctl restart nutetra.service
+   ```
 
 ## Development
 
-To run the application in development mode:
-
+For development and testing, run with the debug flag:
 ```
 python web/start.py --debug
 ```
+
+This enables Flask debug mode and more verbose logging.
 
 ## License
 
