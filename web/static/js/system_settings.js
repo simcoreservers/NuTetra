@@ -109,10 +109,44 @@ function setupConfirmation(buttonId, title, message, onConfirm) {
     }
 }
 
+// Function to safely handle API requests
+function makeApiRequest(url, method = 'GET', data = null) {
+    const options = {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (data) {
+        options.body = JSON.stringify(data);
+    }
+    
+    return fetch(url, options)
+        .then(response => {
+            // Check if response is ok (status 200-299)
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            // Check content type to ensure it's JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Response is not JSON. The API endpoint may not be working correctly.');
+            }
+            
+            return response.json();
+        })
+        .catch(error => {
+            console.error('API request failed:', error);
+            showStatusMessage(`Request failed: ${error.message}`, 'error');
+            throw error;
+        });
+}
+
 // Load system information
 function loadSystemInfo() {
-    fetch('/api/system/info')
-        .then(response => response.json())
+    makeApiRequest('/api/system/info')
         .then(data => {
             document.getElementById('system-name').textContent = data.system_name;
             document.getElementById('software-version').textContent = data.version;
@@ -142,6 +176,7 @@ function loadSystemInfo() {
         })
         .catch(error => {
             console.error('Error loading system info:', error);
+            showStatusMessage('Failed to load system information. See console for details.', 'error');
         });
 }
 
@@ -154,25 +189,18 @@ function setupEventHandlers() {
             const newName = document.getElementById('new-system-name').value.trim();
             
             if (newName) {
-                fetch('/api/system/name', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ name: newName }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatusMessage('System name updated', 'success');
-                        document.getElementById('system-name').textContent = newName;
-                    } else {
-                        showStatusMessage(`Error: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
-                });
+                makeApiRequest('/api/system/name', 'POST', { name: newName })
+                    .then(data => {
+                        if (data.success) {
+                            showStatusMessage('System name updated', 'success');
+                            document.getElementById('system-name').textContent = newName;
+                        } else {
+                            showStatusMessage(`Error: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(() => {
+                        // Error is already handled by makeApiRequest
+                    });
             } else {
                 showStatusMessage('System name cannot be empty', 'error');
             }
@@ -186,31 +214,24 @@ function setupEventHandlers() {
             const chipNumber = document.getElementById('gpio-chip-select').value;
             const library = document.getElementById('gpio-library').value;
             
-            fetch('/api/system/gpio-settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    gpio_chip: parseInt(chipNumber),
-                    gpio_library: library
-                }),
+            makeApiRequest('/api/system/gpio-settings', 'POST', { 
+                gpio_chip: parseInt(chipNumber),
+                gpio_library: library
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatusMessage('GPIO settings updated. Restart services to apply changes.', 'success');
-                    
-                    // Update displayed info
-                    document.getElementById('gpio-chip').textContent = `gpiochip${chipNumber}`;
-                    document.getElementById('gpio-interface').textContent = library;
-                } else {
-                    showStatusMessage(`Error: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                showStatusMessage(`Error: ${error.message}`, 'error');
-            });
+                .then(data => {
+                    if (data.success) {
+                        showStatusMessage('GPIO settings updated. Restart services to apply changes.', 'success');
+                        
+                        // Update displayed info
+                        document.getElementById('gpio-chip').textContent = `gpiochip${chipNumber}`;
+                        document.getElementById('gpio-interface').textContent = library;
+                    } else {
+                        showStatusMessage(`Error: ${data.message}`, 'error');
+                    }
+                })
+                .catch(() => {
+                    // Error is already handled by makeApiRequest
+                });
         });
     }
     
@@ -218,8 +239,7 @@ function setupEventHandlers() {
     const testGpioBtn = document.getElementById('test-gpio');
     if (testGpioBtn) {
         testGpioBtn.addEventListener('click', function() {
-            fetch('/api/system/test-gpio', { method: 'POST' })
-                .then(response => response.json())
+            makeApiRequest('/api/system/test-gpio', 'POST')
                 .then(data => {
                     if (data.success) {
                         showStatusMessage('GPIO test successful', 'success');
@@ -227,8 +247,8 @@ function setupEventHandlers() {
                         showStatusMessage(`GPIO test failed: ${data.message}`, 'error');
                     }
                 })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
+                .catch(() => {
+                    // Error is already handled by makeApiRequest
                 });
         });
     }
@@ -247,24 +267,17 @@ function setupEventHandlers() {
                 i2c_enabled: document.getElementById('i2c-enabled').checked
             };
             
-            fetch('/api/system/pin-assignments', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(pinAssignments),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatusMessage('Pin assignments saved. Restart services to apply changes.', 'success');
-                } else {
-                    showStatusMessage(`Error: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                showStatusMessage(`Error: ${error.message}`, 'error');
-            });
+            makeApiRequest('/api/system/pin-assignments', 'POST', pinAssignments)
+                .then(data => {
+                    if (data.success) {
+                        showStatusMessage('Pin assignments saved. Restart services to apply changes.', 'success');
+                    } else {
+                        showStatusMessage(`Error: ${data.message}`, 'error');
+                    }
+                })
+                .catch(() => {
+                    // Error is already handled by makeApiRequest
+                });
         });
     }
 }
@@ -297,8 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'Are you sure you want to restart all nutetra services?', 
         function() {
             // Send restart services request
-            fetch('/api/system/restart', { method: 'POST' })
-                .then(response => response.json())
+            makeApiRequest('/api/system/restart', 'POST')
                 .then(data => {
                     if (data.success) {
                         showStatusMessage('System services restarting...', 'success');
@@ -306,8 +318,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         showStatusMessage(`Error: ${data.message}`, 'error');
                     }
                 })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
+                .catch(() => {
+                    // Error is already handled by makeApiRequest
                 });
         }
     );
@@ -316,8 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'Are you sure you want to reboot the Raspberry Pi? This will disconnect your session.',
         function() {
             // Send reboot request
-            fetch('/api/system/reboot', { method: 'POST' })
-                .then(response => response.json())
+            makeApiRequest('/api/system/reboot', 'POST')
                 .then(data => {
                     if (data.success) {
                         showStatusMessage('Device is rebooting. Please wait...', 'success');
@@ -347,8 +358,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         showStatusMessage(`Error: ${data.message}`, 'error');
                     }
                 })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
+                .catch(() => {
+                    // Error is already handled by makeApiRequest
                 });
         }
     );
@@ -357,8 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'Are you sure you want to clear all system logs? This cannot be undone.',
         function() {
             // Send clear logs request
-            fetch('/api/system/clear-logs', { method: 'POST' })
-                .then(response => response.json())
+            makeApiRequest('/api/system/clear-logs', 'POST')
                 .then(data => {
                     if (data.success) {
                         showStatusMessage('System logs cleared', 'success');
@@ -366,8 +376,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         showStatusMessage(`Error: ${data.message}`, 'error');
                     }
                 })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
+                .catch(() => {
+                    // Error is already handled by makeApiRequest
                 });
         }
     );
@@ -379,8 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (confirmInput && confirmInput.value === 'RESET') {
                 // Send factory reset request
-                fetch('/api/system/factory-reset', { method: 'POST' })
-                    .then(response => response.json())
+                makeApiRequest('/api/system/factory-reset', 'POST')
                     .then(data => {
                         if (data.success) {
                             showStatusMessage('Factory reset initiated. System will reboot.', 'success');
@@ -392,8 +401,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             showStatusMessage(`Error: ${data.message}`, 'error');
                         }
                     })
-                    .catch(error => {
-                        showStatusMessage(`Error: ${error.message}`, 'error');
+                    .catch(() => {
+                        // Error is already handled by makeApiRequest
                     });
             } else {
                 showStatusMessage('Please type "RESET" in the confirmation field to proceed with factory reset', 'error');
