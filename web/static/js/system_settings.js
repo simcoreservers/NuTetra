@@ -4,6 +4,9 @@
  * Note: Tab functionality is handled directly in the HTML template
  */
 
+// Set this to true temporarily to enable testing while we fix the server
+const DEVELOPMENT_MODE = true;
+
 // Function to show/hide elements based on checkbox state
 function toggleVisibility(controlId, targetId) {
     const control = document.getElementById(controlId);
@@ -111,6 +114,84 @@ function setupConfirmation(buttonId, title, message, onConfirm) {
 
 // Function to safely handle API requests
 function makeApiRequest(url, method = 'GET', data = null) {
+    // In development mode, return simulated responses
+    if (DEVELOPMENT_MODE) {
+        console.log(`DEV MODE: Simulating ${method} request to ${url}`);
+        console.log('Request data:', data);
+        
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // Simulate different endpoints
+                if (url === '/api/system/info') {
+                    resolve({
+                        system_name: 'NuTetra Dev',
+                        version: '1.0.0',
+                        uptime: '1 day, 2:34:56',
+                        platform: 'Raspberry Pi 5 (simulated)',
+                        cpu_temp: '45.2°C',
+                        gpio_interface: 'Simulation Mode',
+                        gpio_chip: 4
+                    });
+                } 
+                else if (url.includes('/api/system/name')) {
+                    resolve({
+                        success: true,
+                        message: `System name updated to: ${data.name}`
+                    });
+                }
+                else if (url.includes('/api/system/gpio-settings')) {
+                    resolve({
+                        success: true,
+                        message: 'GPIO settings updated. Restart services to apply changes.'
+                    });
+                }
+                else if (url.includes('/api/system/pin-assignments')) {
+                    resolve({
+                        success: true,
+                        message: 'Pin assignments saved. Restart services to apply changes.'
+                    });
+                }
+                else if (url.includes('/api/system/test-gpio')) {
+                    resolve({
+                        success: true,
+                        message: 'GPIO test successful (simulated)'
+                    });
+                }
+                else if (url.includes('/api/system/restart')) {
+                    resolve({
+                        success: true,
+                        message: 'System services restarting... (simulated)'
+                    });
+                }
+                else if (url.includes('/api/system/reboot')) {
+                    resolve({
+                        success: true,
+                        message: 'Device is rebooting. Please wait... (simulated)'
+                    });
+                }
+                else if (url.includes('/api/system/clear-logs')) {
+                    resolve({
+                        success: true,
+                        message: 'System logs cleared (simulated)'
+                    });
+                }
+                else if (url.includes('/api/system/factory-reset')) {
+                    resolve({
+                        success: true,
+                        message: 'Factory reset initiated. System will reboot. (simulated)'
+                    });
+                }
+                else {
+                    resolve({
+                        success: false,
+                        message: 'Unknown endpoint in development mode'
+                    });
+                }
+            }, 500); // Simulate network delay
+        });
+    }
+    
+    // Real API request for production mode
     const options = {
         method: method,
         headers: {
