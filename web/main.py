@@ -10,22 +10,49 @@ import logging
 import threading
 from pathlib import Path
 
-# Adjust paths for new location
+# Adjust paths for new location - IMPROVED PATH HANDLING
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+# Also add the project root to handle absolute imports
+project_root = os.path.abspath(parent_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Print paths for debugging
+print(f"Current directory: {current_dir}")
+print(f"Parent directory: {parent_dir}")
+print(f"System path: {sys.path}")
+
+# Try to display directory contents for debugging
+try:
+    print(f"Parent directory contents: {os.listdir(parent_dir)}")
+except Exception as e:
+    print(f"Error listing parent directory: {e}")
 
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
 
 # Import the updated components
-from dosing.pump_manager import PumpManager
-from dosing.dosing_controller import DosingController
-from atlas.atlas_interface import AtlasInterface
+try:
+    print("Attempting to import modules...")
+    from dosing.pump_manager import PumpManager
+    print("Imported PumpManager")
+    from dosing.dosing_controller import DosingController
+    print("Imported DosingController")
+    from atlas.atlas_interface import AtlasInterface
+    print("Imported AtlasInterface")
 
-# System imports
-from system.config_manager import ConfigManager
-from system.data_logger import DataLogger
+    # System imports
+    from system.config_manager import ConfigManager
+    print("Imported ConfigManager")
+    from system.data_logger import DataLogger
+    print("Imported DataLogger")
+except ImportError as e:
+    print(f"CRITICAL ERROR importing modules: {e}")
+    print(f"Current sys.path: {sys.path}")
+    raise
 
 # Configure logging
 logging.basicConfig(
