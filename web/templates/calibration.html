@@ -1,0 +1,804 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor Calibration - nutetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="calibration-container">
+    <div class="card">
+        <h2>Sensor Calibration</h2>
+        <p class="caution-note">⚠️ Calibration is critical for accurate readings. Ensure you have the proper calibration solutions before proceeding.</p>
+        
+        <div class="calibration-tabs">
+            <button class="tab-button active" data-target="ph-tab">pH Calibration</button>
+            <button class="tab-button" data-target="ec-tab">EC Calibration</button>
+            <button class="tab-button" data-target="temp-tab">Temperature Calibration</button>
+            <button class="tab-button" data-target="pump-tab">Pump Calibration</button>
+        </div>
+        
+        <div class="tab-content active" id="ph-tab">
+            <h3>pH Probe Calibration</h3>
+            <p>For accurate pH readings, perform a 3-point calibration using pH 4.01, 7.00, and 10.00 solutions.</p>
+            
+            <div class="calibration-status">
+                <div class="status-item">
+                    <span class="status-label">Probe Status:</span>
+                    <span class="status-value" id="ph-status">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Low Point (pH 4.01):</span>
+                    <span class="status-value" id="ph-low-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Mid Point (pH 7.00):</span>
+                    <span class="status-value" id="ph-mid-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">High Point (pH 10.00):</span>
+                    <span class="status-value" id="ph-high-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current Reading:</span>
+                    <span class="status-value" id="ph-reading">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Calibrated:</span>
+                    <span class="status-value" id="ph-calibrated-date">Unknown</span>
+                </div>
+            </div>
+            
+            <div class="calibration-steps">
+                <div class="step">
+                    <h4>Step 1: Prepare Probe</h4>
+                    <p>Rinse the pH probe with distilled water and gently blot dry.</p>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 2: Select Calibration Point</h4>
+                    <select id="ph-cal-point">
+                        <option value="mid">Mid Point (pH 7.00)</option>
+                        <option value="low">Low Point (pH 4.01)</option>
+                        <option value="high">High Point (pH 10.00)</option>
+                    </select>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 3: Place Probe in Solution</h4>
+                    <p>Place the pH probe in the selected calibration solution.</p>
+                    <p>Allow the reading to stabilize for at least 1 minute.</p>
+                    <div class="reading-container">
+                        <span>Current Raw mV Reading: </span>
+                        <span id="ph-mv-reading">--</span>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 4: Perform Calibration</h4>
+                    <div class="button-group">
+                        <button class="btn primary-btn" id="ph-calibrate">Calibrate</button>
+                        <button class="btn secondary-btn" id="ph-read">Read</button>
+                        <button class="btn danger-btn" id="ph-reset">Factory Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="calibration-log">
+                <h4>Calibration Log</h4>
+                <pre id="ph-log"></pre>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="ec-tab">
+            <h3>EC/TDS Probe Calibration</h3>
+            <p>For accurate EC readings, perform a 2-point calibration using 1413 µS/cm and 12880 µS/cm solutions.</p>
+            
+            <div class="calibration-status">
+                <div class="status-item">
+                    <span class="status-label">Probe Status:</span>
+                    <span class="status-value" id="ec-status">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Dry Point:</span>
+                    <span class="status-value" id="ec-dry-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Low Point (1413 µS/cm):</span>
+                    <span class="status-value" id="ec-low-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">High Point (12880 µS/cm):</span>
+                    <span class="status-value" id="ec-high-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current Reading:</span>
+                    <span class="status-value" id="ec-reading">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current TDS:</span>
+                    <span class="status-value" id="tds-reading">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Calibrated:</span>
+                    <span class="status-value" id="ec-calibrated-date">Unknown</span>
+                </div>
+            </div>
+            
+            <div class="calibration-steps">
+                <div class="step">
+                    <h4>Step 1: Prepare Probe</h4>
+                    <p>Rinse the EC probe with distilled water and gently blot dry.</p>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 2: Select Calibration Point</h4>
+                    <select id="ec-cal-point">
+                        <option value="dry">Dry Calibration</option>
+                        <option value="low">Low Point (1413 µS/cm)</option>
+                        <option value="high">High Point (12880 µS/cm)</option>
+                    </select>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 3: Prepare for Calibration</h4>
+                    <p id="ec-instructions">For dry calibration: ensure the probe is completely dry.</p>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 4: Perform Calibration</h4>
+                    <div class="button-group">
+                        <button class="btn primary-btn" id="ec-calibrate">Calibrate</button>
+                        <button class="btn secondary-btn" id="ec-read">Read</button>
+                        <button class="btn danger-btn" id="ec-reset">Factory Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="calibration-log">
+                <h4>Calibration Log</h4>
+                <pre id="ec-log"></pre>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="temp-tab">
+            <h3>Temperature Probe Calibration</h3>
+            <p>For accurate temperature readings, calibrate the temperature probe using a known reference.</p>
+            
+            <div class="calibration-status">
+                <div class="status-item">
+                    <span class="status-label">Probe Status:</span>
+                    <span class="status-value" id="temp-status">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Calibration Status:</span>
+                    <span class="status-value" id="temp-cal-status"><span class="dot"></span> Not Calibrated</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current Reading:</span>
+                    <span class="status-value" id="temp-reading">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Calibrated:</span>
+                    <span class="status-value" id="temp-calibrated-date">Unknown</span>
+                </div>
+            </div>
+            
+            <div class="calibration-steps">
+                <div class="step">
+                    <h4>Step 1: Prepare Reference</h4>
+                    <p>Place the temperature probe and a reference thermometer in the same water bath.</p>
+                    <p>Allow both readings to stabilize for at least 1 minute.</p>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 2: Enter Reference Temperature</h4>
+                    <div class="form-group">
+                        <label for="temp-reference">Reference Temperature (°C):</label>
+                        <input type="number" id="temp-reference" step="0.1" min="0" max="100" placeholder="25.0">
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 3: Perform Calibration</h4>
+                    <div class="button-group">
+                        <button class="btn primary-btn" id="temp-calibrate">Calibrate</button>
+                        <button class="btn secondary-btn" id="temp-read">Read</button>
+                        <button class="btn danger-btn" id="temp-reset">Factory Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="calibration-log">
+                <h4>Calibration Log</h4>
+                <pre id="temp-log"></pre>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="pump-tab">
+            <h3>Pump Calibration</h3>
+            <p>Calibrate dosing pumps to ensure accurate dosing volumes.</p>
+            
+            <div class="calibration-status">
+                <div class="status-item">
+                    <span class="status-label">Selected Pump:</span>
+                    <span class="status-value" id="pump-selection-status">None</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current Flow Rate:</span>
+                    <span class="status-value" id="pump-flow-rate">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Calibrated:</span>
+                    <span class="status-value" id="pump-calibrated-date">Unknown</span>
+                </div>
+            </div>
+            
+            <div class="calibration-steps">
+                <div class="step">
+                    <h4>Step 1: Select Pump</h4>
+                    <select id="pump-selection">
+                        <option value="">-- Select Pump --</option>
+                        <option value="ph_up">pH Up Pump</option>
+                        <option value="ph_down">pH Down Pump</option>
+                        <option value="nutrient_a">Nutrient A Pump</option>
+                        <option value="nutrient_b">Nutrient B Pump</option>
+                    </select>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 2: Prepare for Calibration</h4>
+                    <p>Place the output tube of the selected pump into a graduated cylinder or beaker.</p>
+                    <p>Enter the amount of time to run the pump:</p>
+                    <div class="form-group">
+                        <label for="pump-run-time">Run Time (seconds):</label>
+                        <input type="number" id="pump-run-time" min="1" max="60" value="10">
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 3: Run Calibration Cycle</h4>
+                    <div class="button-group">
+                        <button class="btn primary-btn" id="pump-run">Run Pump</button>
+                    </div>
+                    <div id="pump-running-status" class="status-message hidden">
+                        Pump is running... <span id="pump-countdown"></span>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h4>Step 4: Enter Measured Volume</h4>
+                    <div class="form-group">
+                        <label for="measured-volume">Measured Volume (ml):</label>
+                        <input type="number" id="measured-volume" step="0.1" min="0" max="100" placeholder="0.0">
+                    </div>
+                    <div class="button-group">
+                        <button class="btn primary-btn" id="save-calibration">Save Calibration</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="calibration-log">
+                <h4>Calibration Log</h4>
+                <pre id="pump-log"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab navigation
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show the selected tab content
+            const targetId = button.getAttribute('data-target');
+            document.getElementById(targetId).classList.add('active');
+            
+            // Set this button as active
+            button.classList.add('active');
+        });
+    });
+    
+    // Function to update status dots
+    function updateStatusDot(elementId, status) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<span class="dot ${status ? 'dot-success' : 'dot-error'}"></span> ${status ? 'Calibrated' : 'Not Calibrated'}`;
+    }
+    
+    // Function to add log message
+    function addLog(logElementId, message) {
+        const log = document.getElementById(logElementId);
+        const timestamp = new Date().toLocaleTimeString();
+        log.innerHTML += `[${timestamp}] ${message}\n`;
+        log.scrollTop = log.scrollHeight;
+    }
+    
+    // Load calibration status for all sensors
+    function loadCalibrationStatus() {
+        fetch('/api/calibration/status')
+            .then(response => response.json())
+            .then(data => {
+                // Update pH calibration status
+                document.getElementById('ph-status').textContent = data.pH.status;
+                updateStatusDot('ph-low-status', data.pH.low);
+                updateStatusDot('ph-mid-status', data.pH.mid);
+                updateStatusDot('ph-high-status', data.pH.high);
+                document.getElementById('ph-calibrated-date').textContent = data.pH.last_calibrated || 'Unknown';
+                
+                // Update EC calibration status
+                document.getElementById('ec-status').textContent = data.EC.status;
+                updateStatusDot('ec-dry-status', data.EC.dry);
+                updateStatusDot('ec-low-status', data.EC.low);
+                updateStatusDot('ec-high-status', data.EC.high);
+                document.getElementById('ec-calibrated-date').textContent = data.EC.last_calibrated || 'Unknown';
+                
+                // Update temperature calibration status
+                document.getElementById('temp-status').textContent = data.RTD.status;
+                updateStatusDot('temp-cal-status', data.RTD.confirmed);
+                document.getElementById('temp-calibrated-date').textContent = data.RTD.last_calibrated || 'Unknown';
+                
+                // Update pump calibration status if available
+                if (data.pumps) {
+                    // This would be populated when a pump is selected
+                }
+            })
+            .catch(error => {
+                console.error('Error loading calibration status:', error);
+            });
+    }
+    
+    // Load current sensor readings
+    function loadSensorReadings() {
+        fetch('/api/sensors/readings')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('ph-reading').textContent = data.pH !== null ? data.pH.toFixed(2) : '--';
+                document.getElementById('ph-mv-reading').textContent = data.pH_mv !== null ? data.pH_mv.toFixed(1) + ' mV' : '--';
+                document.getElementById('ec-reading').textContent = data.EC !== null ? data.EC.toFixed(0) + ' µS/cm' : '--';
+                document.getElementById('tds-reading').textContent = data.TDS !== null ? data.TDS.toFixed(0) + ' ppm' : '--';
+                document.getElementById('temp-reading').textContent = data.temperature !== null ? data.temperature.toFixed(1) + ' °C' : '--';
+            })
+            .catch(error => {
+                console.error('Error loading sensor readings:', error);
+            });
+    }
+    
+    // pH Calibration
+    document.getElementById('ph-read').addEventListener('click', function() {
+        addLog('ph-log', 'Reading pH...');
+        fetch('/api/sensors/read?type=pH')
+            .then(response => response.json())
+            .then(data => {
+                addLog('ph-log', `pH: ${data.pH.toFixed(2)}, mV: ${data.pH_mv.toFixed(1)}`);
+                document.getElementById('ph-reading').textContent = data.pH.toFixed(2);
+                document.getElementById('ph-mv-reading').textContent = data.pH_mv.toFixed(1) + ' mV';
+            })
+            .catch(error => {
+                console.error('Error reading pH:', error);
+                addLog('ph-log', `Error: ${error.message}`);
+            });
+    });
+    
+    document.getElementById('ph-calibrate').addEventListener('click', function() {
+        const calPoint = document.getElementById('ph-cal-point').value;
+        let calValue;
+        
+        if (calPoint === 'low') {
+            calValue = 4.01;
+        } else if (calPoint === 'mid') {
+            calValue = 7.00;
+        } else if (calPoint === 'high') {
+            calValue = 10.00;
+        }
+        
+        addLog('ph-log', `Calibrating pH at ${calPoint} point (${calValue})...`);
+        
+        fetch('/api/calibration/ph', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                point: calPoint,
+                value: calValue
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLog('ph-log', `Calibration successful: ${data.message}`);
+                // Update status dot for this calibration point
+                updateStatusDot(`ph-${calPoint}-status`, true);
+            } else {
+                addLog('ph-log', `Calibration failed: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error calibrating pH:', error);
+            addLog('ph-log', `Error: ${error.message}`);
+        });
+    });
+    
+    document.getElementById('ph-reset').addEventListener('click', function() {
+        if (confirm('Are you sure you want to factory reset the pH sensor? This will erase ALL calibration data!')) {
+            addLog('ph-log', 'Factory resetting pH sensor...');
+            
+            fetch('/api/calibration/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sensor: 'pH'
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog('ph-log', `Reset successful: ${data.message}`);
+                    // Update all status dots
+                    updateStatusDot('ph-low-status', false);
+                    updateStatusDot('ph-mid-status', false);
+                    updateStatusDot('ph-high-status', false);
+                } else {
+                    addLog('ph-log', `Reset failed: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error resetting pH sensor:', error);
+                addLog('ph-log', `Error: ${error.message}`);
+            });
+        }
+    });
+    
+    // EC Calibration
+    document.getElementById('ec-cal-point').addEventListener('change', function() {
+        const calPoint = this.value;
+        let instructions = '';
+        
+        if (calPoint === 'dry') {
+            instructions = 'For dry calibration: ensure the probe is completely dry.';
+        } else if (calPoint === 'low') {
+            instructions = 'Place the EC probe in 1413 µS/cm solution and allow reading to stabilize.';
+        } else if (calPoint === 'high') {
+            instructions = 'Place the EC probe in 12880 µS/cm solution and allow reading to stabilize.';
+        }
+        
+        document.getElementById('ec-instructions').textContent = instructions;
+    });
+    
+    document.getElementById('ec-read').addEventListener('click', function() {
+        addLog('ec-log', 'Reading EC...');
+        fetch('/api/sensors/read?type=EC')
+            .then(response => response.json())
+            .then(data => {
+                addLog('ec-log', `EC: ${data.EC.toFixed(0)} µS/cm, TDS: ${data.TDS.toFixed(0)} ppm`);
+                document.getElementById('ec-reading').textContent = data.EC.toFixed(0) + ' µS/cm';
+                document.getElementById('tds-reading').textContent = data.TDS.toFixed(0) + ' ppm';
+            })
+            .catch(error => {
+                console.error('Error reading EC:', error);
+                addLog('ec-log', `Error: ${error.message}`);
+            });
+    });
+    
+    document.getElementById('ec-calibrate').addEventListener('click', function() {
+        const calPoint = document.getElementById('ec-cal-point').value;
+        let calValue = null;
+        
+        if (calPoint === 'low') {
+            calValue = 1413;
+        } else if (calPoint === 'high') {
+            calValue = 12880;
+        }
+        
+        addLog('ec-log', `Calibrating EC at ${calPoint} point${calValue ? ' (' + calValue + ' µS/cm)' : ''}...`);
+        
+        fetch('/api/calibration/ec', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                point: calPoint,
+                value: calValue
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLog('ec-log', `Calibration successful: ${data.message}`);
+                // Update status dot for this calibration point
+                updateStatusDot(`ec-${calPoint}-status`, true);
+            } else {
+                addLog('ec-log', `Calibration failed: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error calibrating EC:', error);
+            addLog('ec-log', `Error: ${error.message}`);
+        });
+    });
+    
+    document.getElementById('ec-reset').addEventListener('click', function() {
+        if (confirm('Are you sure you want to factory reset the EC sensor? This will erase ALL calibration data!')) {
+            addLog('ec-log', 'Factory resetting EC sensor...');
+            
+            fetch('/api/calibration/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sensor: 'EC'
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog('ec-log', `Reset successful: ${data.message}`);
+                    // Update all status dots
+                    updateStatusDot('ec-dry-status', false);
+                    updateStatusDot('ec-low-status', false);
+                    updateStatusDot('ec-high-status', false);
+                } else {
+                    addLog('ec-log', `Reset failed: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error resetting EC sensor:', error);
+                addLog('ec-log', `Error: ${error.message}`);
+            });
+        }
+    });
+    
+    // Temperature Calibration
+    document.getElementById('temp-read').addEventListener('click', function() {
+        addLog('temp-log', 'Reading temperature...');
+        fetch('/api/sensors/read?type=RTD')
+            .then(response => response.json())
+            .then(data => {
+                addLog('temp-log', `Temperature: ${data.temperature.toFixed(1)} °C`);
+                document.getElementById('temp-reading').textContent = data.temperature.toFixed(1) + ' °C';
+            })
+            .catch(error => {
+                console.error('Error reading temperature:', error);
+                addLog('temp-log', `Error: ${error.message}`);
+            });
+    });
+    
+    document.getElementById('temp-calibrate').addEventListener('click', function() {
+        const referenceTemp = parseFloat(document.getElementById('temp-reference').value);
+        
+        if (isNaN(referenceTemp) || referenceTemp < 0 || referenceTemp > 100) {
+            addLog('temp-log', 'Error: Please enter a valid temperature between 0 and 100 °C');
+            return;
+        }
+        
+        addLog('temp-log', `Calibrating temperature to ${referenceTemp.toFixed(1)} °C...`);
+        
+        fetch('/api/calibration/temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                value: referenceTemp
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLog('temp-log', `Calibration successful: ${data.message}`);
+                // Update status dot
+                updateStatusDot('temp-cal-status', true);
+            } else {
+                addLog('temp-log', `Calibration failed: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error calibrating temperature:', error);
+            addLog('temp-log', `Error: ${error.message}`);
+        });
+    });
+    
+    document.getElementById('temp-reset').addEventListener('click', function() {
+        if (confirm('Are you sure you want to factory reset the temperature sensor? This will erase ALL calibration data!')) {
+            addLog('temp-log', 'Factory resetting temperature sensor...');
+            
+            fetch('/api/calibration/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sensor: 'RTD'
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog('temp-log', `Reset successful: ${data.message}`);
+                    // Update status dot
+                    updateStatusDot('temp-cal-status', false);
+                } else {
+                    addLog('temp-log', `Reset failed: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error resetting temperature sensor:', error);
+                addLog('temp-log', `Error: ${error.message}`);
+            });
+        }
+    });
+    
+    // Pump Calibration
+    document.getElementById('pump-selection').addEventListener('change', function() {
+        const pumpName = this.value;
+        if (!pumpName) {
+            document.getElementById('pump-selection-status').textContent = 'None';
+            document.getElementById('pump-flow-rate').textContent = '--';
+            return;
+        }
+        
+        // Display selected pump and load its details
+        let pumpDisplay = '';
+        switch(pumpName) {
+            case 'ph_up': pumpDisplay = 'pH Up Pump'; break;
+            case 'ph_down': pumpDisplay = 'pH Down Pump'; break;
+            case 'nutrient_a': pumpDisplay = 'Nutrient A Pump'; break;
+            case 'nutrient_b': pumpDisplay = 'Nutrient B Pump'; break;
+        }
+        document.getElementById('pump-selection-status').textContent = pumpDisplay;
+        
+        // Load pump details
+        fetch(`/api/pumps/info?pump=${pumpName}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('pump-flow-rate').textContent = 
+                    data.flow_rate ? `${data.flow_rate.toFixed(2)} ml/s` : 'Not calibrated';
+                document.getElementById('pump-calibrated-date').textContent = 
+                    data.last_calibrated || 'Unknown';
+                
+                addLog('pump-log', `Loaded ${pumpDisplay} information`);
+            })
+            .catch(error => {
+                console.error('Error loading pump info:', error);
+                addLog('pump-log', `Error: ${error.message}`);
+            });
+    });
+    
+    document.getElementById('pump-run').addEventListener('click', function() {
+        const pumpName = document.getElementById('pump-selection').value;
+        if (!pumpName) {
+            alert('Please select a pump first');
+            return;
+        }
+        
+        const runTime = parseInt(document.getElementById('pump-run-time').value);
+        if (isNaN(runTime) || runTime < 1 || runTime > 60) {
+            alert('Please enter a valid run time between 1 and 60 seconds');
+            return;
+        }
+        
+        // Disable button during pumping
+        this.disabled = true;
+        
+        // Show running status
+        const runningStatus = document.getElementById('pump-running-status');
+        runningStatus.classList.remove('hidden');
+        
+        // Start countdown
+        const countdownElement = document.getElementById('pump-countdown');
+        let timeLeft = runTime;
+        countdownElement.textContent = `${timeLeft}s remaining`;
+        
+        const countdownInterval = setInterval(() => {
+            timeLeft -= 1;
+            countdownElement.textContent = `${timeLeft}s remaining`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+        
+        addLog('pump-log', `Running ${pumpName} for ${runTime} seconds...`);
+        
+        fetch('/api/pumps/calibrate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pump: pumpName,
+                run_time: runTime
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLog('pump-log', `Pump run complete. Expected volume: ${data.expected_volume.toFixed(2)} ml`);
+                document.getElementById('measured-volume').placeholder = data.expected_volume.toFixed(2);
+            } else {
+                addLog('pump-log', `Pump run failed: ${data.message}`);
+            }
+            
+            // Hide running status
+            runningStatus.classList.add('hidden');
+            
+            // Re-enable button
+            this.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error running pump:', error);
+            addLog('pump-log', `Error: ${error.message}`);
+            
+            // Hide running status
+            runningStatus.classList.add('hidden');
+            
+            // Re-enable button
+            this.disabled = false;
+        });
+    });
+    
+    document.getElementById('save-calibration').addEventListener('click', function() {
+        const pumpName = document.getElementById('pump-selection').value;
+        if (!pumpName) {
+            alert('Please select a pump first');
+            return;
+        }
+        
+        const measuredVolume = parseFloat(document.getElementById('measured-volume').value);
+        if (isNaN(measuredVolume) || measuredVolume <= 0) {
+            alert('Please enter a valid measured volume');
+            return;
+        }
+        
+        const runTime = parseInt(document.getElementById('pump-run-time').value);
+        
+        addLog('pump-log', `Saving calibration for ${pumpName}: ${measuredVolume.toFixed(2)} ml in ${runTime} seconds...`);
+        
+        fetch('/api/pumps/save-calibration', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pump: pumpName,
+                volume: measuredVolume,
+                run_time: runTime
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLog('pump-log', `Calibration saved: ${data.message}`);
+                document.getElementById('pump-flow-rate').textContent = `${data.flow_rate.toFixed(2)} ml/s`;
+                document.getElementById('pump-calibrated-date').textContent = new Date().toLocaleDateString();
+            } else {
+                addLog('pump-log', `Calibration save failed: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving calibration:', error);
+            addLog('pump-log', `Error: ${error.message}`);
+        });
+    });
+    
+    // Initialize
+    loadCalibrationStatus();
+    loadSensorReadings();
+    
+    // Refresh readings periodically
+    setInterval(loadSensorReadings, 10000);
+</script>
+{% endblock %} 

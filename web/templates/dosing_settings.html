@@ -3,224 +3,764 @@
 {% block title %}Dosing Settings - nutetra Hydroponic System{% endblock %}
 
 {% block content %}
-<div class="settings-container">
-    <h2>Dosing Settings</h2>
-    
-    <form id="dosing-settings-form" class="settings-form">
-        <div class="form-section">
-            <h3>Target Values</h3>
-            
-            <div class="form-group">
-                <label for="target-ph">Target pH:</label>
-                <input type="number" id="target-ph" name="target_ph" min="4.0" max="8.0" step="0.1" required>
+<div class="dosing-settings-container">
+    <div class="card">
+        <h2>Target Values</h2>
+        <div class="settings-form">
+            <div class="form-section">
+                <h3>Optimal Range Settings</h3>
+                <div class="form-group">
+                    <label for="target-ph">Target pH:</label>
+                    <input type="number" id="target-ph" name="target-ph" step="0.1" min="4.0" max="9.0" placeholder="6.0">
+                </div>
+                <div class="form-group">
+                    <label for="ph-tolerance">pH Tolerance Range (±):</label>
+                    <input type="number" id="ph-tolerance" name="ph-tolerance" step="0.05" min="0.05" max="1.0" placeholder="0.2">
+                </div>
+                <div class="form-group">
+                    <label for="target-ec">Target EC (µS/cm):</label>
+                    <input type="number" id="target-ec" name="target-ec" step="10" min="0" max="5000" placeholder="1800">
+                </div>
+                <div class="form-group">
+                    <label for="ec-tolerance">EC Tolerance Range (±):</label>
+                    <input type="number" id="ec-tolerance" name="ec-tolerance" step="10" min="10" max="500" placeholder="100">
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="ph-tolerance">pH Tolerance (±):</label>
-                <input type="number" id="ph-tolerance" name="ph_tolerance" min="0.1" max="1.0" step="0.1" required>
+            <div class="form-section">
+                <h3>Reservoir Information</h3>
+                <div class="form-group">
+                    <label for="reservoir-volume">Reservoir Volume (liters):</label>
+                    <input type="number" id="reservoir-volume" name="reservoir-volume" step="1" min="1" max="1000" placeholder="100">
+                </div>
+                <div class="form-group">
+                    <label for="water-added">Water Added (liters):</label>
+                    <input type="number" id="water-added" name="water-added" step="0.1" min="0" max="1000" placeholder="0">
+                </div>
+                <div class="button-group">
+                    <button class="btn primary-btn" id="calculate-dilution">Calculate Dilution Compensation</button>
+                </div>
+                <div id="dilution-results" class="hidden">
+                    <div class="result-item">
+                        <span class="result-label">Current EC:</span>
+                        <span class="result-value" id="current-ec-value">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Diluted EC:</span>
+                        <span class="result-value" id="diluted-ec-value">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Nutrient A Required:</span>
+                        <span class="result-value" id="nutrient-a-required">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Nutrient B Required:</span>
+                        <span class="result-value" id="nutrient-b-required">--</span>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn primary-btn" id="apply-dilution-compensation">Apply Compensation</button>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="target-ec">Target EC (mS/cm):</label>
-                <input type="number" id="target-ec" name="target_ec" min="0.5" max="5.0" step="0.1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="ec-tolerance">EC Tolerance (±):</label>
-                <input type="number" id="ec-tolerance" name="ec_tolerance" min="0.1" max="1.0" step="0.1" required>
+            <div class="button-group">
+                <button class="btn primary-btn" id="save-target-settings">Save Target Settings</button>
             </div>
         </div>
-        
-        <div class="form-section">
-            <h3>Dosing Schedule</h3>
-            
-            <div class="form-group">
-                <label for="dosing-frequency">Check Frequency (minutes):</label>
-                <input type="number" id="dosing-frequency" name="dosing_frequency" min="10" max="1440" step="1" required>
+    </div>
+
+    <div class="card">
+        <h2>Nutrient Settings</h2>
+        <div class="settings-form">
+            <div class="form-section">
+                <h3>Nutrient Mixture</h3>
+                <div class="form-group">
+                    <label for="nutrient-ratio">Nutrient A:B Ratio:</label>
+                    <input type="number" id="nutrient-ratio" name="nutrient-ratio" step="0.1" min="0.1" max="10.0" placeholder="1.0">
+                    <span class="input-help">1.0 means equal parts A and B. Higher values mean more of A.</span>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="adjust-ph-first" name="adjust-ph-first" checked>
+                        <label for="adjust-ph-first">Adjust pH before nutrients</label>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="dosing-cooldown">Cooldown Between Dosing (minutes):</label>
-                <input type="number" id="dosing-cooldown" name="dosing_cooldown" min="5" max="120" step="1" required>
+            <div class="form-section">
+                <h3>Dosing Schedule</h3>
+                <div class="form-group">
+                    <label for="dosing-interval">Minimum Interval Between Dosing (minutes):</label>
+                    <input type="number" id="dosing-interval" name="dosing-interval" step="5" min="5" max="1440" placeholder="60">
+                </div>
+                <div class="form-group">
+                    <label for="stabilization-time-ph">pH Stabilization Time (seconds):</label>
+                    <input type="number" id="stabilization-time-ph" name="stabilization-time-ph" step="30" min="30" max="3600" placeholder="300">
+                </div>
+                <div class="form-group">
+                    <label for="stabilization-time-ec">EC Stabilization Time (seconds):</label>
+                    <input type="number" id="stabilization-time-ec" name="stabilization-time-ec" step="30" min="30" max="3600" placeholder="600">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn primary-btn" id="save-nutrient-settings">Save Nutrient Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Safety Limits</h2>
+        <div class="settings-form">
+            <div class="form-section">
+                <h3>Daily Dosage Limits</h3>
+                <p class="safety-note">These limits help prevent overdosing by setting maximum daily amounts.</p>
+                <div class="form-group">
+                    <label for="max-ph-up">Maximum pH Up (ml/day):</label>
+                    <input type="number" id="max-ph-up" name="max-ph-up" step="5" min="0" max="1000" placeholder="100">
+                </div>
+                <div class="form-group">
+                    <label for="max-ph-down">Maximum pH Down (ml/day):</label>
+                    <input type="number" id="max-ph-down" name="max-ph-down" step="5" min="0" max="1000" placeholder="100">
+                </div>
+                <div class="form-group">
+                    <label for="max-nutrient-a">Maximum Nutrient A (ml/day):</label>
+                    <input type="number" id="max-nutrient-a" name="max-nutrient-a" step="5" min="0" max="1000" placeholder="200">
+                </div>
+                <div class="form-group">
+                    <label for="max-nutrient-b">Maximum Nutrient B (ml/day):</label>
+                    <input type="number" id="max-nutrient-b" name="max-nutrient-b" step="5" min="0" max="1000" placeholder="200">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Dosing Efficiency</h3>
+                <p class="safety-note">These values determine how much solution is needed per unit change. Adjust if your nutrients have different concentrations.</p>
+                <div class="form-group">
+                    <label for="efficiency-ph-up">pH Up Efficiency (ml per 0.1 pH decrease per 100L):</label>
+                    <input type="number" id="efficiency-ph-up" name="efficiency-ph-up" step="0.1" min="0.1" max="10.0" placeholder="0.5">
+                </div>
+                <div class="form-group">
+                    <label for="efficiency-ph-down">pH Down Efficiency (ml per 0.1 pH increase per 100L):</label>
+                    <input type="number" id="efficiency-ph-down" name="efficiency-ph-down" step="0.1" min="0.1" max="10.0" placeholder="0.5">
+                </div>
+                <div class="form-group">
+                    <label for="efficiency-nutrient-a">Nutrient A Efficiency (ml per 100 µS/cm increase per 100L):</label>
+                    <input type="number" id="efficiency-nutrient-a" name="efficiency-nutrient-a" step="0.5" min="0.5" max="50.0" placeholder="5.0">
+                </div>
+                <div class="form-group">
+                    <label for="efficiency-nutrient-b">Nutrient B Efficiency (ml per 100 µS/cm increase per 100L):</label>
+                    <input type="number" id="efficiency-nutrient-b" name="efficiency-nutrient-b" step="0.5" min="0.5" max="50.0" placeholder="5.0">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn primary-btn" id="save-safety-settings">Save Safety Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Manual Dosing</h2>
+        <div class="manual-dosing-container">
+            <div class="form-section">
+                <h3>Manual Dose Control</h3>
+                <div class="dosing-control-grid">
+                    <div class="dosing-control">
+                        <div class="dosing-label">pH Up</div>
+                        <div class="dosing-input">
+                            <input type="number" id="manual-ph-up" name="manual-ph-up" step="0.1" min="0" max="50" placeholder="0.0">
+                            <span class="unit-label">ml</span>
+                        </div>
+                        <button class="btn primary-btn dose-button" data-pump="ph_up">Dose</button>
+                    </div>
+                    
+                    <div class="dosing-control">
+                        <div class="dosing-label">pH Down</div>
+                        <div class="dosing-input">
+                            <input type="number" id="manual-ph-down" name="manual-ph-down" step="0.1" min="0" max="50" placeholder="0.0">
+                            <span class="unit-label">ml</span>
+                        </div>
+                        <button class="btn primary-btn dose-button" data-pump="ph_down">Dose</button>
+                    </div>
+                    
+                    <div class="dosing-control">
+                        <div class="dosing-label">Nutrient A</div>
+                        <div class="dosing-input">
+                            <input type="number" id="manual-nutrient-a" name="manual-nutrient-a" step="0.5" min="0" max="100" placeholder="0.0">
+                            <span class="unit-label">ml</span>
+                        </div>
+                        <button class="btn primary-btn dose-button" data-pump="nutrient_a">Dose</button>
+                    </div>
+                    
+                    <div class="dosing-control">
+                        <div class="dosing-label">Nutrient B</div>
+                        <div class="dosing-input">
+                            <input type="number" id="manual-nutrient-b" name="manual-nutrient-b" step="0.5" min="0" max="100" placeholder="0.0">
+                            <span class="unit-label">ml</span>
+                        </div>
+                        <button class="btn primary-btn dose-button" data-pump="nutrient_b">Dose</button>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="mixing-time">Mixing Time After Dosing (seconds):</label>
-                <input type="number" id="mixing-time" name="mixing_time" min="10" max="300" step="1" required>
-            </div>
-            
-            <div class="form-group checkbox-group">
-                <input type="checkbox" id="enable-night-mode" name="enable_night_mode">
-                <label for="enable-night-mode">Enable Night Mode (No Dosing During Night Hours)</label>
-            </div>
-            
-            <div class="form-group time-range" id="night-hours-container">
-                <label>Night Hours:</label>
-                <div class="time-inputs">
-                    <input type="time" id="night-start" name="night_start">
-                    <span>to</span>
-                    <input type="time" id="night-end" name="night_end">
+            <div class="form-section">
+                <h3>Automated Dosing</h3>
+                <div class="button-group">
+                    <button class="btn secondary-btn" id="test-ph">Test pH Adjustment</button>
+                    <button class="btn secondary-btn" id="test-ec">Test EC Adjustment</button>
+                    <button class="btn primary-btn" id="run-full-cycle">Run Full Dosing Cycle</button>
                 </div>
             </div>
         </div>
-        
-        <div class="form-section">
-            <h3>Pump Calibration</h3>
-            
-            <div class="form-group">
-                <label for="ph-up-rate">pH Up Pump Rate (ml/sec):</label>
-                <input type="number" id="ph-up-rate" name="ph_up_rate" min="0.1" max="10.0" step="0.1" required>
+    </div>
+    
+    <div class="card">
+        <h2>Dosing Status</h2>
+        <div class="dosing-status-container">
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">System State:</span>
+                    <span class="status-value" id="system-state">Idle</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current pH:</span>
+                    <span class="status-value" id="current-ph">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current EC:</span>
+                    <span class="status-value" id="current-ec">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Dosing:</span>
+                    <span class="status-value" id="last-dosing">Never</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Next Dosing:</span>
+                    <span class="status-value" id="next-dosing">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Temperature:</span>
+                    <span class="status-value" id="current-temp">--</span>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="ph-down-rate">pH Down Pump Rate (ml/sec):</label>
-                <input type="number" id="ph-down-rate" name="ph_down_rate" min="0.1" max="10.0" step="0.1" required>
+            <h3>Today's Dosing Summary</h3>
+            <div class="daily-dosing-summary">
+                <div class="summary-item">
+                    <span class="summary-label">pH Up:</span>
+                    <span class="summary-value" id="ph-up-total">0 ml</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="ph-up-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">pH Down:</span>
+                    <span class="summary-value" id="ph-down-total">0 ml</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="ph-down-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Nutrient A:</span>
+                    <span class="summary-value" id="nutrient-a-total">0 ml</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="nutrient-a-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Nutrient B:</span>
+                    <span class="summary-value" id="nutrient-b-total">0 ml</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="nutrient-b-progress" style="width: 0%"></div>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="nutrient-a-rate">Nutrient A Pump Rate (ml/sec):</label>
-                <input type="number" id="nutrient-a-rate" name="nutrient_a_rate" min="0.1" max="10.0" step="0.1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="nutrient-b-rate">Nutrient B Pump Rate (ml/sec):</label>
-                <input type="number" id="nutrient-b-rate" name="nutrient_b_rate" min="0.1" max="10.0" step="0.1" required>
+            <div class="status-actions">
+                <button class="btn primary-btn" id="refresh-status">Refresh Status</button>
+                <button class="btn danger-btn" id="emergency-stop">Emergency Stop All Pumps</button>
             </div>
         </div>
-        
-        <div class="form-section">
-            <h3>Dosing Limits</h3>
-            
-            <div class="form-group">
-                <label for="max-ph-adjustment">Maximum pH Adjustment Per Dose (ml):</label>
-                <input type="number" id="max-ph-adjustment" name="max_ph_adjustment" min="1" max="100" step="1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="max-nutrient-dose">Maximum Nutrient Dose (ml):</label>
-                <input type="number" id="max-nutrient-dose" name="max_nutrient_dose" min="1" max="100" step="1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="max-daily-ph-up">Maximum Daily pH Up (ml):</label>
-                <input type="number" id="max-daily-ph-up" name="max_daily_ph_up" min="1" max="1000" step="1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="max-daily-ph-down">Maximum Daily pH Down (ml):</label>
-                <input type="number" id="max-daily-ph-down" name="max_daily_ph_down" min="1" max="1000" step="1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="max-daily-nutrient">Maximum Daily Nutrient (ml):</label>
-                <input type="number" id="max-daily-nutrient" name="max_daily_nutrient" min="1" max="1000" step="1" required>
-            </div>
-        </div>
-        
-        <div class="button-group">
-            <button type="submit" class="btn primary-btn">Save Settings</button>
-            <button type="button" id="restore-defaults" class="btn secondary-btn">Restore Defaults</button>
-        </div>
-    </form>
+    </div>
 </div>
-
-<div id="status-message" class="status-message"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Toggle night hours inputs based on checkbox
-    const enableNightMode = document.getElementById('enable-night-mode');
-    const nightHoursContainer = document.getElementById('night-hours-container');
-    
-    function toggleNightHours() {
-        nightHoursContainer.style.display = enableNightMode.checked ? 'flex' : 'none';
+    // Load dosing settings
+    function loadDosingSettings() {
+        fetch('/api/dosing/settings')
+            .then(response => response.json())
+            .then(data => {
+                // Target values
+                document.getElementById('target-ph').value = data.target_ph;
+                document.getElementById('ph-tolerance').value = data.ph_tolerance;
+                document.getElementById('target-ec').value = data.target_ec;
+                document.getElementById('ec-tolerance').value = data.ec_tolerance;
+                document.getElementById('reservoir-volume').value = data.reservoir_volume;
+                
+                // Nutrient settings
+                document.getElementById('nutrient-ratio').value = data.nutrient_ratio_a_to_b;
+                document.getElementById('adjust-ph-first').checked = data.adjust_ph_first;
+                document.getElementById('dosing-interval').value = data.dosing_interval / 60; // Convert seconds to minutes
+                document.getElementById('stabilization-time-ph').value = data.stabilization_time.ph_up; // Use ph_up time
+                document.getElementById('stabilization-time-ec').value = data.stabilization_time.nutrient_a; // Use nutrient_a time
+                
+                // Safety limits
+                document.getElementById('max-ph-up').value = data.max_daily_dosage_ml.ph_up;
+                document.getElementById('max-ph-down').value = data.max_daily_dosage_ml.ph_down;
+                document.getElementById('max-nutrient-a').value = data.max_daily_dosage_ml.nutrient_a;
+                document.getElementById('max-nutrient-b').value = data.max_daily_dosage_ml.nutrient_b;
+                
+                // Dosing efficiency
+                document.getElementById('efficiency-ph-up').value = data.dose_efficiency.ph_up;
+                document.getElementById('efficiency-ph-down').value = data.dose_efficiency.ph_down;
+                document.getElementById('efficiency-nutrient-a').value = data.dose_efficiency.nutrient_a;
+                document.getElementById('efficiency-nutrient-b').value = data.dose_efficiency.nutrient_b;
+            })
+            .catch(error => {
+                console.error('Error loading dosing settings:', error);
+                alert('Error loading dosing settings');
+            });
     }
     
-    enableNightMode.addEventListener('change', toggleNightHours);
-    toggleNightHours(); // Initialize state
-    
-    // Load settings from server
-    function loadSettings() {
-        socket.emit('request_dosing_settings');
+    // Load dosing status
+    function loadDosingStatus() {
+        fetch('/api/dosing/status')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('system-state').textContent = data.state;
+                document.getElementById('current-ph').textContent = data.current_pH !== null ? data.current_pH.toFixed(2) : '--';
+                document.getElementById('current-ec').textContent = data.current_EC !== null ? data.current_EC.toFixed(0) + ' µS/cm' : '--';
+                document.getElementById('current-temp').textContent = data.current_temperature !== null ? 
+                    data.current_temperature.toFixed(1) + ' °C' : '--';
+                
+                // Format last dosing time
+                const lastDosingTime = data.last_dosing > 0 ? 
+                    new Date(data.last_dosing * 1000).toLocaleString() : 'Never';
+                document.getElementById('last-dosing').textContent = lastDosingTime;
+                
+                // Format next dosing time
+                const nextDosingTime = data.next_dosing > 0 ? 
+                    new Date(data.next_dosing * 1000).toLocaleString() : 'Not scheduled';
+                document.getElementById('next-dosing').textContent = nextDosingTime;
+                
+                // Update dosing summary
+                updateDosingSummary(data.dosing_history);
+            })
+            .catch(error => {
+                console.error('Error loading dosing status:', error);
+            });
     }
     
-    // Update form with settings from server
-    socket.on('dosing_settings', function(data) {
-        document.getElementById('target-ph').value = data.target_ph;
-        document.getElementById('ph-tolerance').value = data.ph_tolerance;
-        document.getElementById('target-ec').value = data.target_ec;
-        document.getElementById('ec-tolerance').value = data.ec_tolerance;
-        document.getElementById('dosing-frequency').value = data.dosing_frequency;
-        document.getElementById('dosing-cooldown').value = data.dosing_cooldown;
-        document.getElementById('mixing-time').value = data.mixing_time;
-        document.getElementById('enable-night-mode').checked = data.enable_night_mode;
-        document.getElementById('night-start').value = data.night_start;
-        document.getElementById('night-end').value = data.night_end;
-        document.getElementById('ph-up-rate').value = data.ph_up_rate;
-        document.getElementById('ph-down-rate').value = data.ph_down_rate;
-        document.getElementById('nutrient-a-rate').value = data.nutrient_a_rate;
-        document.getElementById('nutrient-b-rate').value = data.nutrient_b_rate;
-        document.getElementById('max-ph-adjustment').value = data.max_ph_adjustment;
-        document.getElementById('max-nutrient-dose').value = data.max_nutrient_dose;
-        document.getElementById('max-daily-ph-up').value = data.max_daily_ph_up;
-        document.getElementById('max-daily-ph-down').value = data.max_daily_ph_down;
-        document.getElementById('max-daily-nutrient').value = data.max_daily_nutrient;
+    // Update dosing summary with progress bars
+    function updateDosingSummary(dosing_history) {
+        if (!dosing_history) return;
         
-        toggleNightHours();
-    });
+        // pH Up
+        const phUpTotal = dosing_history.ph_up.total_24h_ml.toFixed(1);
+        const phUpMax = document.getElementById('max-ph-up').value || 100;
+        const phUpPercent = Math.min(100, (phUpTotal / phUpMax) * 100);
+        document.getElementById('ph-up-total').textContent = `${phUpTotal} ml`;
+        document.getElementById('ph-up-progress').style.width = `${phUpPercent}%`;
+        
+        // pH Down
+        const phDownTotal = dosing_history.ph_down.total_24h_ml.toFixed(1);
+        const phDownMax = document.getElementById('max-ph-down').value || 100;
+        const phDownPercent = Math.min(100, (phDownTotal / phDownMax) * 100);
+        document.getElementById('ph-down-total').textContent = `${phDownTotal} ml`;
+        document.getElementById('ph-down-progress').style.width = `${phDownPercent}%`;
+        
+        // Nutrient A
+        const nutATotal = dosing_history.nutrient_a.total_24h_ml.toFixed(1);
+        const nutAMax = document.getElementById('max-nutrient-a').value || 200;
+        const nutAPercent = Math.min(100, (nutATotal / nutAMax) * 100);
+        document.getElementById('nutrient-a-total').textContent = `${nutATotal} ml`;
+        document.getElementById('nutrient-a-progress').style.width = `${nutAPercent}%`;
+        
+        // Nutrient B
+        const nutBTotal = dosing_history.nutrient_b.total_24h_ml.toFixed(1);
+        const nutBMax = document.getElementById('max-nutrient-b').value || 200;
+        const nutBPercent = Math.min(100, (nutBTotal / nutBMax) * 100);
+        document.getElementById('nutrient-b-total').textContent = `${nutBTotal} ml`;
+        document.getElementById('nutrient-b-progress').style.width = `${nutBPercent}%`;
+        
+        // Set color based on percentage
+        setProgressBarColors();
+    }
     
-    // Handle form submission
-    const dosingSettingsForm = document.getElementById('dosing-settings-form');
-    const statusMessage = document.getElementById('status-message');
-    
-    dosingSettingsForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+    // Set colors for progress bars based on percentage
+    function setProgressBarColors() {
+        const progressBars = document.querySelectorAll('.progress');
         
-        const formData = new FormData(dosingSettingsForm);
-        const settings = {};
-        
-        for (const [key, value] of formData.entries()) {
-            if (key === 'enable_night_mode') {
-                settings[key] = true;
-            } else if (key.startsWith('night_') && !document.getElementById('enable-night-mode').checked) {
-                continue; // Skip night settings if night mode is disabled
+        progressBars.forEach(bar => {
+            const width = parseFloat(bar.style.width);
+            
+            if (width < 50) {
+                bar.style.backgroundColor = 'var(--success-color)';
+            } else if (width < 80) {
+                bar.style.backgroundColor = 'var(--warning-color)';
             } else {
-                settings[key] = isNaN(value) ? value : Number(value);
+                bar.style.backgroundColor = 'var(--danger-color)';
             }
+        });
+    }
+    
+    // Save target settings
+    document.getElementById('save-target-settings').addEventListener('click', function() {
+        const settings = {
+            target_ph: parseFloat(document.getElementById('target-ph').value),
+            ph_tolerance: parseFloat(document.getElementById('ph-tolerance').value),
+            target_ec: parseFloat(document.getElementById('target-ec').value),
+            ec_tolerance: parseFloat(document.getElementById('ec-tolerance').value),
+            reservoir_volume: parseFloat(document.getElementById('reservoir-volume').value)
+        };
+        
+        fetch('/api/dosing/settings/target', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Target settings saved successfully');
+            } else {
+                alert('Error saving target settings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving target settings:', error);
+            alert('Error saving target settings');
+        });
+    });
+    
+    // Save nutrient settings
+    document.getElementById('save-nutrient-settings').addEventListener('click', function() {
+        const settings = {
+            nutrient_ratio_a_to_b: parseFloat(document.getElementById('nutrient-ratio').value),
+            adjust_ph_first: document.getElementById('adjust-ph-first').checked,
+            dosing_interval: parseInt(document.getElementById('dosing-interval').value) * 60, // Convert minutes to seconds
+            stabilization_time: {
+                ph_up: parseInt(document.getElementById('stabilization-time-ph').value),
+                ph_down: parseInt(document.getElementById('stabilization-time-ph').value),
+                nutrient_a: parseInt(document.getElementById('stabilization-time-ec').value),
+                nutrient_b: parseInt(document.getElementById('stabilization-time-ec').value)
+            }
+        };
+        
+        fetch('/api/dosing/settings/nutrient', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Nutrient settings saved successfully');
+            } else {
+                alert('Error saving nutrient settings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving nutrient settings:', error);
+            alert('Error saving nutrient settings');
+        });
+    });
+    
+    // Save safety settings
+    document.getElementById('save-safety-settings').addEventListener('click', function() {
+        const settings = {
+            max_daily_dosage_ml: {
+                ph_up: parseFloat(document.getElementById('max-ph-up').value),
+                ph_down: parseFloat(document.getElementById('max-ph-down').value),
+                nutrient_a: parseFloat(document.getElementById('max-nutrient-a').value),
+                nutrient_b: parseFloat(document.getElementById('max-nutrient-b').value)
+            },
+            dose_efficiency: {
+                ph_up: parseFloat(document.getElementById('efficiency-ph-up').value),
+                ph_down: parseFloat(document.getElementById('efficiency-ph-down').value),
+                nutrient_a: parseFloat(document.getElementById('efficiency-nutrient-a').value),
+                nutrient_b: parseFloat(document.getElementById('efficiency-nutrient-b').value)
+            }
+        };
+        
+        fetch('/api/dosing/settings/safety', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Safety settings saved successfully');
+                // Update the progress bars with new limits
+                loadDosingStatus();
+            } else {
+                alert('Error saving safety settings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving safety settings:', error);
+            alert('Error saving safety settings');
+        });
+    });
+    
+    // Handle manual dosing
+    document.querySelectorAll('.dose-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const pumpType = this.getAttribute('data-pump');
+            const inputId = 'manual-' + pumpType.replace('_', '-');
+            const volume = parseFloat(document.getElementById(inputId).value);
+            
+            if (isNaN(volume) || volume <= 0) {
+                alert('Please enter a valid volume');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to dose ${volume}ml of ${pumpType.replace('_', ' ')}?`)) {
+                return;
+            }
+            
+            this.disabled = true;
+            
+            fetch('/api/dosing/manual', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pump: pumpType,
+                    volume: volume
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully dosed ${volume}ml of ${pumpType.replace('_', ' ')}`);
+                    // Clear input and refresh status
+                    document.getElementById(inputId).value = '';
+                    loadDosingStatus();
+                } else {
+                    alert('Error dosing: ' + data.message);
+                }
+                this.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error dosing:', error);
+                alert('Error dosing');
+                this.disabled = false;
+            });
+        });
+    });
+    
+    // Calculate dilution compensation
+    document.getElementById('calculate-dilution').addEventListener('click', function() {
+        const addedWater = parseFloat(document.getElementById('water-added').value);
+        
+        if (isNaN(addedWater) || addedWater <= 0) {
+            alert('Please enter a valid amount of water added');
+            return;
         }
         
-        if (!settings.enable_night_mode) {
-            settings.enable_night_mode = false;
+        fetch('/api/dosing/calculate-dilution', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                added_water_liters: addedWater
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show results
+                document.getElementById('current-ec-value').textContent = `${data.current_ec} µS/cm`;
+                document.getElementById('diluted-ec-value').textContent = `${data.diluted_ec} µS/cm`;
+                document.getElementById('nutrient-a-required').textContent = `${data.nutrient_a_ml} ml`;
+                document.getElementById('nutrient-b-required').textContent = `${data.nutrient_b_ml} ml`;
+                
+                // Show results section
+                document.getElementById('dilution-results').classList.remove('hidden');
+            } else {
+                alert('Error calculating dilution: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error calculating dilution:', error);
+            alert('Error calculating dilution');
+        });
+    });
+    
+    // Apply dilution compensation
+    document.getElementById('apply-dilution-compensation').addEventListener('click', function() {
+        const addedWater = parseFloat(document.getElementById('water-added').value);
+        
+        if (isNaN(addedWater) || addedWater <= 0) {
+            alert('Please enter a valid amount of water added');
+            return;
         }
         
-        socket.emit('update_dosing_settings', settings);
-    });
-    
-    // Handle settings update response
-    socket.on('settings_updated', function(data) {
-        statusMessage.textContent = 'Settings saved successfully!';
-        statusMessage.className = 'status-message success';
-        
-        setTimeout(function() {
-            statusMessage.textContent = '';
-            statusMessage.className = 'status-message';
-        }, 3000);
-    });
-    
-    socket.on('settings_error', function(data) {
-        statusMessage.textContent = 'Error: ' + data.message;
-        statusMessage.className = 'status-message error';
-    });
-    
-    // Restore defaults
-    document.getElementById('restore-defaults').addEventListener('click', function() {
-        if (confirm('Are you sure you want to restore default settings? Current settings will be lost.')) {
-            socket.emit('restore_default_dosing_settings');
+        if (!confirm('Are you sure you want to apply dilution compensation?')) {
+            return;
         }
+        
+        this.disabled = true;
+        
+        fetch('/api/dosing/apply-dilution', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                added_water_liters: addedWater
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Dilution compensation applied successfully');
+                document.getElementById('water-added').value = '';
+                document.getElementById('dilution-results').classList.add('hidden');
+                loadDosingStatus();
+            } else {
+                alert('Error applying dilution compensation: ' + data.message);
+            }
+            this.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error applying dilution compensation:', error);
+            alert('Error applying dilution compensation');
+            this.disabled = false;
+        });
     });
     
-    // Load settings when page loads
-    window.addEventListener('load', loadSettings);
+    // Test pH adjustment
+    document.getElementById('test-ph').addEventListener('click', function() {
+        if (!confirm('Run pH adjustment test cycle?')) {
+            return;
+        }
+        
+        this.disabled = true;
+        
+        fetch('/api/dosing/test-ph', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`pH test completed: ${data.message}`);
+                loadDosingStatus();
+            } else {
+                alert(`pH test failed: ${data.message}`);
+            }
+            this.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error running pH test:', error);
+            alert('Error running pH test');
+            this.disabled = false;
+        });
+    });
+    
+    // Test EC adjustment
+    document.getElementById('test-ec').addEventListener('click', function() {
+        if (!confirm('Run EC adjustment test cycle?')) {
+            return;
+        }
+        
+        this.disabled = true;
+        
+        fetch('/api/dosing/test-ec', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`EC test completed: ${data.message}`);
+                loadDosingStatus();
+            } else {
+                alert(`EC test failed: ${data.message}`);
+            }
+            this.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error running EC test:', error);
+            alert('Error running EC test');
+            this.disabled = false;
+        });
+    });
+    
+    // Run full dosing cycle
+    document.getElementById('run-full-cycle').addEventListener('click', function() {
+        if (!confirm('Run a full dosing cycle (pH and EC adjustment)?')) {
+            return;
+        }
+        
+        this.disabled = true;
+        
+        fetch('/api/dosing/run-cycle', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Dosing cycle completed: ${data.message}`);
+                loadDosingStatus();
+            } else {
+                alert(`Dosing cycle failed: ${data.message}`);
+            }
+            this.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error running dosing cycle:', error);
+            alert('Error running dosing cycle');
+            this.disabled = false;
+        });
+    });
+    
+    // Emergency stop
+    document.getElementById('emergency-stop').addEventListener('click', function() {
+        if (!confirm('EMERGENCY STOP: Turn off all pumps immediately?')) {
+            return;
+        }
+        
+        fetch('/api/pumps/stop-all', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All pumps stopped');
+                loadDosingStatus();
+            } else {
+                alert('Error stopping pumps: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping pumps:', error);
+            alert('Error stopping pumps');
+        });
+    });
+    
+    // Refresh status
+    document.getElementById('refresh-status').addEventListener('click', function() {
+        loadDosingStatus();
+    });
+    
+    // Initialize
+    loadDosingSettings();
+    loadDosingStatus();
+    
+    // Update status every minute
+    setInterval(loadDosingStatus, 60000);
 </script>
 {% endblock %} 
