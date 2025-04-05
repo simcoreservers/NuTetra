@@ -85,12 +85,6 @@ def alerts():
     return render_template('alerts.html')
 
 
-@app.route('/system-settings')
-def system_settings():
-    """Render the system settings page"""
-    return render_template('system_settings.html')
-
-
 # API Endpoints
 
 @app.route('/api/system/info', methods=['GET'])
@@ -605,6 +599,309 @@ def api_test_alert():
         })
     except Exception as e:
         logger.error(f"Error in /api/alerts/test: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/dosing/settings', methods=['GET'])
+def api_dosing_settings():
+    """API endpoint to get dosing settings"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Dosing controller not initialized'
+            }), 500
+        
+        settings = system_manager.dosing_controller.get_settings()
+        
+        return jsonify({
+            'status': 'success',
+            'data': settings
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/dosing/settings: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/dosing/settings/target', methods=['POST'])
+def api_update_dosing_target():
+    """API endpoint to update dosing target settings"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Dosing controller not initialized'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        result = system_manager.dosing_controller.update_target_settings(data)
+        
+        if result:
+            return jsonify({
+                'status': 'success',
+                'message': 'Target settings updated'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to update settings'
+            }), 500
+    except Exception as e:
+        logger.error(f"Error in /api/dosing/settings/target: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/dosing/settings/nutrient', methods=['POST'])
+def api_update_nutrient_settings():
+    """API endpoint to update nutrient settings"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Dosing controller not initialized'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        result = system_manager.dosing_controller.update_nutrient_settings(data)
+        
+        if result:
+            return jsonify({
+                'status': 'success',
+                'message': 'Nutrient settings updated'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to update settings'
+            }), 500
+    except Exception as e:
+        logger.error(f"Error in /api/dosing/settings/nutrient: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/dosing/settings/safety', methods=['POST'])
+def api_update_safety_settings():
+    """API endpoint to update safety settings"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Dosing controller not initialized'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        result = system_manager.dosing_controller.update_safety_settings(data)
+        
+        if result:
+            return jsonify({
+                'status': 'success',
+                'message': 'Safety settings updated'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to update settings'
+            }), 500
+    except Exception as e:
+        logger.error(f"Error in /api/dosing/settings/safety: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/pumps/info', methods=['GET'])
+def api_pump_info():
+    """API endpoint to get pump information"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None or system_manager.dosing_controller.pumps is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pump manager not initialized'
+            }), 500
+        
+        pump_name = request.args.get('pump')
+        if not pump_name:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pump name not provided'
+            }), 400
+        
+        # Get pump state
+        pump_state = system_manager.dosing_controller.pumps.get_pump_state(pump_name)
+        
+        # Get pump settings from config
+        pump_settings = system_manager.config_manager.get_setting('pumps', {}).get(pump_name, {})
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'state': pump_state,
+                'settings': pump_settings
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/pumps/info: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/pumps/calibrate', methods=['POST'])
+def api_calibrate_pump():
+    """API endpoint to calibrate a pump"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None or system_manager.dosing_controller.pumps is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pump manager not initialized'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        pump_name = data.get('pump')
+        run_time = data.get('time')
+        
+        if not pump_name or run_time is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pump name and time are required'
+            }), 400
+        
+        # Run the pump for the specified time
+        success = system_manager.dosing_controller.pumps.run_pump_for_seconds(pump_name, float(run_time))
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': f'Pump {pump_name} ran for {run_time} seconds'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to run pump'
+            }), 500
+    except Exception as e:
+        logger.error(f"Error in /api/pumps/calibrate: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/pumps/save-calibration', methods=['POST'])
+def api_save_pump_calibration():
+    """API endpoint to save pump calibration"""
+    try:
+        if system_manager is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'System manager not initialized'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        pump_name = data.get('pump')
+        volume = data.get('volume')
+        time = data.get('time')
+        
+        if not pump_name or volume is None or time is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pump name, volume, and time are required'
+            }), 400
+        
+        # Calculate flow rate
+        flow_rate = float(volume) / float(time)
+        
+        # Update pump settings
+        pumps_config = system_manager.config_manager.get_setting('pumps', {})
+        
+        if pump_name not in pumps_config:
+            pumps_config[pump_name] = {}
+        
+        pumps_config[pump_name]['rate'] = flow_rate
+        
+        # Save to config
+        system_manager.config_manager.set_setting('pumps', pumps_config)
+        system_manager.config_manager.save_config()
+        
+        # Update dosing controller settings if needed
+        if system_manager.dosing_controller:
+            rate_key = f"{pump_name}_rate"
+            system_manager.dosing_controller.settings[rate_key] = flow_rate
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Calibration saved: {pump_name} flow rate = {flow_rate:.2f} ml/sec'
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/pumps/save-calibration: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/pumps/stop-all', methods=['POST'])
+def api_stop_all_pumps():
+    """API endpoint to stop all pumps"""
+    try:
+        if system_manager is None or system_manager.dosing_controller is None or system_manager.dosing_controller.pumps is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pump manager not initialized'
+            }), 500
+        
+        system_manager.dosing_controller.pumps.all_pumps_off()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'All pumps stopped'
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/pumps/stop-all: {e}")
         return jsonify({
             'status': 'error',
             'message': str(e)
