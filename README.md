@@ -28,7 +28,7 @@ The nutetra Hydroponic Automation System is a web-based application designed to 
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/nutetra.git
+   git clone https://github.com/simcoreservers/nutetra.git
    cd nutetra
    ```
 
