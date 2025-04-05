@@ -67,6 +67,30 @@ def logs():
     return render_template('logs.html')
 
 
+@app.route('/dosing-settings')
+def dosing_settings():
+    """Render the dosing settings page"""
+    return render_template('dosing_settings.html')
+
+
+@app.route('/pump-control')
+def pump_control():
+    """Render the pump control page"""
+    return render_template('pump_control.html')
+
+
+@app.route('/alerts')
+def alerts():
+    """Render the alerts page"""
+    return render_template('alerts.html')
+
+
+@app.route('/system-settings')
+def system_settings():
+    """Render the system settings page"""
+    return render_template('system_settings.html')
+
+
 # API Endpoints
 
 @app.route('/api/system/info', methods=['GET'])
@@ -468,6 +492,119 @@ def api_export_data():
             }), 500
     except Exception as e:
         logger.error(f"Error in /api/export: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/alerts/settings', methods=['GET'])
+def api_get_alert_settings():
+    """API endpoint to get alert settings"""
+    try:
+        if system_manager is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'System manager not initialized'
+            }), 500
+        
+        # Get alerts settings from config manager
+        alerts = system_manager.config_manager.get_setting('alerts', {})
+        
+        return jsonify({
+            'status': 'success',
+            'data': alerts
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/alerts/settings: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/alerts/settings', methods=['POST'])
+def api_update_alert_settings():
+    """API endpoint to update alert settings"""
+    try:
+        if system_manager is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'System manager not initialized'
+            }), 500
+        
+        data = request.json
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No settings data provided'
+            }), 400
+        
+        # Update settings
+        result = system_manager.update_settings('alerts', data)
+        
+        if result:
+            return jsonify({
+                'status': 'success',
+                'message': 'Alert settings updated'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to update alert settings'
+            }), 500
+    except Exception as e:
+        logger.error(f"Error in /api/alerts/settings (POST): {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/alerts/history', methods=['GET'])
+def api_get_alert_history():
+    """API endpoint to get alert history"""
+    try:
+        if system_manager is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'System manager not initialized'
+            }), 500
+        
+        # Get warnings from system state
+        warnings = system_manager.system_state.get('warnings', [])
+        
+        return jsonify({
+            'status': 'success',
+            'data': warnings
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/alerts/history: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/alerts/test', methods=['POST'])
+def api_test_alert():
+    """API endpoint to test alert notifications"""
+    try:
+        if system_manager is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'System manager not initialized'
+            }), 500
+        
+        # Add a test warning
+        system_manager._add_warning("This is a test alert notification")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Test alert notification sent'
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/alerts/test: {e}")
         return jsonify({
             'status': 'error',
             'message': str(e)
