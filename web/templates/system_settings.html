@@ -487,10 +487,13 @@
 <script>
 // Simple vanilla tab system
 function openTab(evt, tabName) {
+    console.log("Opening tab:", tabName);
+    
     // Hide all tab content
     var tabcontent = document.getElementsByClassName("tabcontent");
     for (var i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
+        tabcontent[i].classList.remove("active");
     }
     
     // Remove active class from all buttons
@@ -499,14 +502,40 @@ function openTab(evt, tabName) {
         tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
     }
     
-    // Show the current tab, and add an "active" class to the button that opened the tab
-    document.getElementById(tabName).style.display = "block";
+    // Show the current tab and add an "active" class
+    var currentTab = document.getElementById(tabName);
+    if (currentTab) {
+        currentTab.style.display = "block";
+        currentTab.classList.add("active");
+        console.log("Tab displayed:", tabName);
+    } else {
+        console.error("Tab not found:", tabName);
+    }
+    
+    // Add active class to the button
     evt.currentTarget.className += " active";
 }
 
 // Open the default tab on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded - initializing tabs");
+    
+    // Ensure all tabs are hidden initially with CSS
+    var style = document.createElement('style');
+    style.innerHTML = '.tabcontent { display: none !important; }';
+    document.head.appendChild(style);
+    
+    // Click the default tab button
     document.getElementById("defaultOpen").click();
+    console.log("Default tab clicked");
+    
+    // Double-check tab visibility
+    setTimeout(function() {
+        var tabs = document.getElementsByClassName("tabcontent");
+        for (var i = 0; i < tabs.length; i++) {
+            console.log("Tab:", tabs[i].id, "Display:", getComputedStyle(tabs[i]).display);
+        }
+    }, 500);
 });
 </script>
 <script src="{{ url_for('static', filename='js/system_settings.js') }}"></script>

@@ -561,9 +561,14 @@ footer {
 }
 
 /* Hide all tabcontent by default */
-.tabcontent {
-    display: none;
-    animation: fadeIn 0.3s ease;
+.settings-container .tabcontent {
+    display: none !important;
+}
+
+/* Show only the active tabcontent */
+.settings-container .tabcontent.active,
+.tabcontent[style*="display: block"] {
+    display: block !important;
 }
 
 /* Fade in animation for tab content */
