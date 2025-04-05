@@ -469,10 +469,17 @@
     </div>
 </div>
 
+<!-- Modal dialog for confirmations -->
 <div id="confirmation-modal" class="modal" style="display: none;">
     <div class="modal-content">
         <h3 id="modal-title">Confirm Action</h3>
         <p id="modal-message">Are you sure you want to perform this action?</p>
+        
+        <!-- Reset confirmation input (hidden by default) -->
+        <div id="reset-input-container" style="display: none; margin: 10px 0;">
+            <input type="text" id="confirm-reset" placeholder="Type RESET here" class="form-control">
+        </div>
+        
         <div class="button-group">
             <button class="btn danger-btn" id="modal-confirm">Confirm</button>
             <button class="btn secondary-btn" id="modal-cancel">Cancel</button>
