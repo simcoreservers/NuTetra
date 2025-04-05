@@ -7,6 +7,7 @@ import time
 import logging
 import threading
 import datetime
+import random
 from typing import Dict, Any, Optional, Tuple, List
 
 logger = logging.getLogger("NuTetra.Dosing")
@@ -14,20 +15,25 @@ logger = logging.getLogger("NuTetra.Dosing")
 class DosingController:
     """Controls automated dosing of pH and nutrients based on sensor readings"""
     
-    def __init__(self, config, atlas, pumps):
+    def __init__(self, config_manager, atlas=None, pumps=None):
         """Initialize the dosing controller
         
         Args:
-            config: Configuration manager instance
-            atlas: Atlas sensor interface
-            pumps: Pump manager instance
+            config_manager: Configuration manager instance
+            atlas: Atlas sensor interface (optional)
+            pumps: Pump manager instance (optional)
         """
-        self.config = config
+        self.config_manager = config_manager
         self.atlas = atlas
         self.pumps = pumps
         
+        # Determine if we're in simulation mode
+        self.simulation_mode = (atlas is None or pumps is None)
+        if self.simulation_mode:
+            logger.warning("Dosing controller running in simulation mode")
+        
         # Get dosing settings from config
-        self.settings = self.config.get_setting('dosing', {})
+        self.settings = self.config_manager.get_setting('dosing', {})
         
         # Set default settings if not in config
         self._set_default_settings()
@@ -38,7 +44,7 @@ class DosingController:
         self.last_run = 0
         self.next_run = 0
         self.dosing_thread = None
-        self.dosing_history = {
+        self.daily_totals = {
             'ph_up': {'daily_total': 0, 'last_reset': time.time()},
             'ph_down': {'daily_total': 0, 'last_reset': time.time()},
             'nutrient_a': {'daily_total': 0, 'last_reset': time.time()},
@@ -77,8 +83,8 @@ class DosingController:
                 self.settings[key] = value
         
         # Save settings to config
-        self.config.set_setting('dosing', self.settings)
-        self.config.save_config()
+        self.config_manager.set_setting('dosing', self.settings)
+        self.config_manager.save_config()
     
     def start(self):
         """Start the dosing controller thread"""
@@ -138,7 +144,7 @@ class DosingController:
         """Reset daily dosing totals if the day has changed"""
         current_time = time.time()
         
-        for pump_id, history in self.dosing_history.items():
+        for pump_id, history in self.daily_totals.items():
             # Reset if more than 24 hours have passed
             if current_time - history['last_reset'] > 86400:  # 24 hours in seconds
                 logger.info(f"Resetting daily total for {pump_id}")
@@ -227,7 +233,7 @@ class DosingController:
             dose_ml = min(ph_diff * 5, max_dose)
         
         # Check daily limits
-        daily_used = self.dosing_history[pump_id]['daily_total']
+        daily_used = self.daily_totals[pump_id]['daily_total']
         if daily_used + dose_ml > max_daily:
             logger.warning(f"Daily limit reached for {pump_id}. Limiting dose.")
             dose_ml = max(0, max_daily - daily_used)
@@ -267,8 +273,8 @@ class DosingController:
         # and nutrient concentration
         
         # Check daily limits for both nutrient types
-        a_used = self.dosing_history['nutrient_a']['daily_total']
-        b_used = self.dosing_history['nutrient_b']['daily_total']
+        a_used = self.daily_totals['nutrient_a']['daily_total']
+        b_used = self.daily_totals['nutrient_b']['daily_total']
         
         # Distribute dose evenly between A and B
         a_dose = dose_ml / 2
@@ -283,124 +289,300 @@ class DosingController:
         # Return result as (type, dose)
         return "nutrients", (a_dose, b_dose)
     
+    def _get_sensor_readings(self):
+        """Get current sensor readings with simulation support
+        
+        Returns:
+            Dictionary with ph, ec, tds, and temperature readings
+        """
+        if self.simulation_mode or self.atlas is None:
+            # Return "sensor not detected" instead of simulated readings
+            logger.info("Atlas sensor interface not available, reporting sensors as not detected")
+            return {
+                'ph': "sensor not detected",
+                'ec': "sensor not detected",
+                'tds': "sensor not detected",
+                'temperature': "sensor not detected"
+            }
+        else:
+            # Get readings from Atlas interface
+            return {
+                'ph': self.atlas.read_ph(),
+                'ec': self.atlas.read_ec(),
+                'tds': self.atlas.read_tds(),
+                'temperature': self.atlas.read_temperature()
+            }
+
     def run_cycle(self):
         """Run a complete dosing cycle"""
-        logger.info("Running dosing cycle")
-        
         try:
-            # Collect current sensor data
-            ph = self.atlas.get_ph()
-            ec = self.atlas.get_ec()
+            # Mark start time
+            cycle_start = time.time()
             
-            logger.info(f"Current pH: {ph}, EC: {ec}")
+            # Get current readings
+            readings = self._get_sensor_readings()
+            current_ph = readings['ph']
+            current_ec = readings['ec']
             
-            # Check if sensor readings are valid
-            if not (4.0 <= ph <= 9.0) or not (0.0 <= ec <= 5.0):
-                logger.error(f"Invalid sensor readings: pH={ph}, EC={ec}")
+            # Check if sensors are detected
+            if current_ph == "sensor not detected" or current_ec == "sensor not detected":
+                logger.warning("Sensors not detected, skipping dosing cycle")
                 self._schedule_next_run()
-                return
+                return {
+                    'ph_adjustment_needed': False,
+                    'ec_adjustment_needed': False,
+                    'error': "Sensors not detected",
+                    'cycle_time': time.time() - cycle_start
+                }
             
-            # Calculate pH adjustment needed
-            ph_pump, ph_dose = self._calculate_ph_dose(ph)
+            if current_ph is None or current_ec is None:
+                logger.error("Failed to get sensor readings, skipping dosing cycle")
+                self._schedule_next_run()
+                return {
+                    'ph_adjustment_needed': False,
+                    'ec_adjustment_needed': False,
+                    'error': "Failed to get sensor readings",
+                    'cycle_time': time.time() - cycle_start
+                }
             
-            # Calculate nutrient adjustment needed
-            nutrient_type, nutrient_dose = self._calculate_nutrient_dose(ec)
+            logger.info(f"Current readings - pH: {current_ph}, EC: {current_ec}")
             
-            # Perform pH adjustment first if needed
+            # Check pH and calculate dose
+            ph_adjustment_needed = False
+            ph_pump, ph_dose = self._calculate_ph_dose(current_ph)
+            
             if ph_pump and ph_dose > 0:
-                logger.info(f"Adjusting pH with {ph_pump}: {ph_dose:.1f}ml")
-                self._dose_ph(ph_pump, ph_dose)
+                ph_adjustment_needed = True
+                logger.info(f"pH adjustment needed: {ph_pump} {ph_dose}ml")
                 
-                # Wait for mixing after pH adjustment
-                mixing_time = self.settings.get('mixing_time', 30)
-                logger.info(f"Mixing for {mixing_time} seconds after pH adjustment")
-                time.sleep(mixing_time)
+                # Dose pH adjuster
+                success = self._dose_ph(ph_pump, ph_dose)
+                
+                if not success:
+                    logger.error(f"Failed to dose {ph_pump}")
             else:
                 logger.info("No pH adjustment needed")
             
-            # Perform nutrient adjustment if needed
-            if nutrient_type and sum(nutrient_dose) > 0:
-                a_dose, b_dose = nutrient_dose
-                logger.info(f"Adding nutrients: A={a_dose:.1f}ml, B={b_dose:.1f}ml")
-                self._dose_nutrients(a_dose, b_dose)
+            # Check EC and calculate nutrient dose
+            ec_adjustment_needed = False
+            nutrient_pump, nutrient_dose = self._calculate_nutrient_dose(current_ec)
+            
+            if nutrient_pump and nutrient_dose > 0:
+                ec_adjustment_needed = True
+                logger.info(f"Nutrient adjustment needed: {nutrient_dose}ml")
                 
-                # Wait for mixing after nutrient adjustment
-                mixing_time = self.settings.get('mixing_time', 30)
-                logger.info(f"Mixing for {mixing_time} seconds after nutrient adjustment")
-                time.sleep(mixing_time)
+                # Split into A/B doses
+                a_dose = nutrient_dose[0]
+                b_dose = nutrient_dose[1]
+                
+                # Dose nutrients
+                success = self._dose_nutrients(a_dose, b_dose)
+                
+                if not success:
+                    logger.error("Failed to dose nutrients")
             else:
                 logger.info("No nutrient adjustment needed")
             
             # Schedule next run
             self._schedule_next_run()
             
+            # Log completion
+            cycle_time = time.time() - cycle_start
+            logger.info(f"Dosing cycle completed in {cycle_time:.1f} seconds")
+            
+            # Return status
+            return {
+                'ph_adjustment_needed': ph_adjustment_needed,
+                'ec_adjustment_needed': ec_adjustment_needed,
+                'cycle_time': cycle_time
+            }
+            
         except Exception as e:
-            logger.error(f"Error in dosing cycle: {e}")
-            # In case of error, schedule next run anyway
+            logger.error(f"Error running dosing cycle: {e}")
             self._schedule_next_run()
+            return {
+                'error': str(e),
+                'ph_adjustment_needed': False,
+                'ec_adjustment_needed': False,
+                'cycle_time': time.time() - cycle_start if 'cycle_start' in locals() else 0
+            }
     
-    def _dose_ph(self, pump_id: str, dose_ml: float):
-        """Dose pH adjustment
+    def _dose_ph(self, pump_id: str, dose_ml: float) -> bool:
+        """Dose pH adjuster
         
         Args:
             pump_id: The pump to use ('ph_up' or 'ph_down')
-            dose_ml: The amount to dose in ml
+            dose_ml: Amount to dose in ml
+            
+        Returns:
+            True if successful
         """
-        if dose_ml <= 0:
-            return
-        
-        # Get flow rate for this pump
-        rate_key = f"{pump_id}_rate"
-        flow_rate = self.settings.get(rate_key, 1.0)  # ml/sec
-        
-        # Calculate run time
-        run_time = dose_ml / flow_rate
-        
-        # Run the pump
-        success = self.pumps.run_pump_for_seconds(pump_id, run_time)
-        
-        if success:
-            # Update dosing history
-            self.dosing_history[pump_id]['daily_total'] += dose_ml
-            logger.info(f"Dosed {dose_ml:.1f}ml using {pump_id} pump")
-        else:
-            logger.error(f"Failed to dose with {pump_id} pump")
-    
-    def _dose_nutrients(self, a_dose: float, b_dose: float):
+        try:
+            if self.simulation_mode or self.pumps is None:
+                # Simulate dosing in simulation mode
+                logger.info(f"[SIMULATION] Dosing {dose_ml:.1f}ml of {pump_id}")
+                # Add to history
+                self._add_to_history(pump_id, dose_ml)
+                # Simulate mixing time
+                mixing_time = self.settings.get('mixing_time', 30)
+                logger.info(f"[SIMULATION] Mixing for {mixing_time} seconds")
+                time.sleep(1)  # Just a short delay in simulation
+                return True
+            
+            # Check if we've exceeded daily maximum
+            daily_max = self.settings.get(f'max_daily_{pump_id}', 100)
+            current_total = self.daily_totals[pump_id]['daily_total']
+            
+            if current_total + dose_ml > daily_max:
+                logger.warning(f"Daily maximum for {pump_id} exceeded, limiting dose")
+                dose_ml = max(0, daily_max - current_total)
+            
+            if dose_ml <= 0:
+                logger.warning(f"Zero or negative dose calculated for {pump_id}, skipping")
+                return False
+            
+            # Get flow rate from settings
+            flow_rate = self.settings.get(f'{pump_id}_rate', 1.0)  # ml/sec
+            
+            # Calculate run time
+            run_time = dose_ml / flow_rate if flow_rate > 0 else 0
+            
+            # Run the pump
+            logger.info(f"Dosing {dose_ml:.1f}ml of {pump_id} for {run_time:.1f} seconds")
+            success = self.pumps.run_pump_for_seconds(pump_id, run_time)
+            
+            if success:
+                # Add to history
+                self._add_to_history(pump_id, dose_ml)
+                
+                # Wait for mixing
+                mixing_time = self.settings.get('mixing_time', 30)
+                logger.info(f"Mixing for {mixing_time} seconds")
+                time.sleep(mixing_time)
+                
+                return True
+            else:
+                logger.error(f"Failed to run pump {pump_id}")
+                return False
+            
+        except Exception as e:
+            logger.error(f"Error dosing {pump_id}: {e}")
+            return False
+
+    def _dose_nutrients(self, a_dose: float, b_dose: float) -> bool:
         """Dose nutrients
         
         Args:
-            a_dose: Nutrient A dose in ml
-            b_dose: Nutrient B dose in ml
+            a_dose: Amount of nutrient A to dose in ml
+            b_dose: Amount of nutrient B to dose in ml
+            
+        Returns:
+            True if successful
         """
-        # Dose nutrient A
-        if a_dose > 0:
-            flow_rate = self.settings.get('nutrient_a_rate', 1.0)  # ml/sec
-            run_time = a_dose / flow_rate
+        try:
+            if self.simulation_mode or self.pumps is None:
+                # Simulate dosing in simulation mode
+                logger.info(f"[SIMULATION] Dosing nutrients - A: {a_dose:.1f}ml, B: {b_dose:.1f}ml")
+                # Add to history
+                self._add_to_history('nutrient_a', a_dose)
+                self._add_to_history('nutrient_b', b_dose)
+                # Simulate mixing time
+                mixing_time = self.settings.get('mixing_time', 30)
+                logger.info(f"[SIMULATION] Mixing for {mixing_time} seconds")
+                time.sleep(1)  # Just a short delay in simulation
+                return True
             
-            success = self.pumps.run_pump_for_seconds('nutrient_a', run_time)
+            # Check if we've exceeded daily maximum for nutrients
+            daily_max_a = self.settings.get('max_daily_nutrient_a', 100)
+            daily_max_b = self.settings.get('max_daily_nutrient_b', 100)
             
-            if success:
-                self.dosing_history['nutrient_a']['daily_total'] += a_dose
-                logger.info(f"Dosed {a_dose:.1f}ml of nutrient A")
-            else:
-                logger.error("Failed to dose nutrient A")
+            current_total_a = self.daily_totals['nutrient_a']['daily_total']
+            current_total_b = self.daily_totals['nutrient_b']['daily_total']
+            
+            if current_total_a + a_dose > daily_max_a:
+                logger.warning("Daily maximum for nutrient A exceeded, limiting dose")
+                a_dose = max(0, daily_max_a - current_total_a)
+            
+            if current_total_b + b_dose > daily_max_b:
+                logger.warning("Daily maximum for nutrient B exceeded, limiting dose")
+                b_dose = max(0, daily_max_b - current_total_b)
+            
+            if a_dose <= 0 and b_dose <= 0:
+                logger.warning("Zero or negative dose calculated for nutrients, skipping")
+                return False
+            
+            # Get flow rates
+            a_flow_rate = self.settings.get('nutrient_a_rate', 1.0)  # ml/sec
+            b_flow_rate = self.settings.get('nutrient_b_rate', 1.0)  # ml/sec
+            
+            # Calculate run times
+            a_run_time = a_dose / a_flow_rate if a_flow_rate > 0 and a_dose > 0 else 0
+            b_run_time = b_dose / b_flow_rate if b_flow_rate > 0 and b_dose > 0 else 0
+            
+            # Dose nutrient A
+            if a_dose > 0:
+                logger.info(f"Dosing {a_dose:.1f}ml of nutrient A for {a_run_time:.1f} seconds")
+                success_a = self.pumps.run_pump_for_seconds('nutrient_a', a_run_time)
+                
+                if success_a:
+                    self._add_to_history('nutrient_a', a_dose)
+                else:
+                    logger.error("Failed to run nutrient A pump")
+                    return False
+            
+            # Wait briefly between nutrient doses
+            if a_dose > 0 and b_dose > 0:
+                time.sleep(2)
+            
+            # Dose nutrient B
+            if b_dose > 0:
+                logger.info(f"Dosing {b_dose:.1f}ml of nutrient B for {b_run_time:.1f} seconds")
+                success_b = self.pumps.run_pump_for_seconds('nutrient_b', b_run_time)
+                
+                if success_b:
+                    self._add_to_history('nutrient_b', b_dose)
+                else:
+                    logger.error("Failed to run nutrient B pump")
+                    return False
+            
+            # Wait for mixing
+            if a_dose > 0 or b_dose > 0:
+                mixing_time = self.settings.get('mixing_time', 30)
+                logger.info(f"Mixing for {mixing_time} seconds")
+                time.sleep(mixing_time)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error dosing nutrients: {e}")
+            return False
+
+    def _add_to_history(self, pump_id: str, volume: float):
+        """Add a dosing event to history
         
-        # Wait a moment between nutrient doses
-        time.sleep(2)
+        Args:
+            pump_id: The pump used
+            volume: Volume dosed in ml
+        """
+        timestamp = time.time()
         
-        # Dose nutrient B
-        if b_dose > 0:
-            flow_rate = self.settings.get('nutrient_b_rate', 1.0)  # ml/sec
-            run_time = b_dose / flow_rate
-            
-            success = self.pumps.run_pump_for_seconds('nutrient_b', run_time)
-            
-            if success:
-                self.dosing_history['nutrient_b']['daily_total'] += b_dose
-                logger.info(f"Dosed {b_dose:.1f}ml of nutrient B")
-            else:
-                logger.error("Failed to dose nutrient B")
+        # Add to daily total
+        if pump_id in self.daily_totals:
+            self.daily_totals[pump_id]['daily_total'] += volume
+        
+        # Add to history
+        entry = {
+            'pump': pump_id,
+            'volume': volume,
+            'timestamp': timestamp,
+            'time': datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        self.dosing_history.append(entry)
+        
+        # Limit history to last 100 entries
+        if len(self.dosing_history) > 100:
+            self.dosing_history = self.dosing_history[-100:]
     
     def manual_dose(self, pump_id: str, volume_ml: float) -> bool:
         """Manually run a pump to dose a specific amount
@@ -427,7 +609,7 @@ class DosingController:
         
         # Check daily limits
         max_daily = self.settings.get(f"max_daily_{pump_id.replace('nutrient_', '')}", 100)
-        current_total = self.dosing_history[pump_id]['daily_total']
+        current_total = self.daily_totals[pump_id]['daily_total']
         
         if current_total + volume_ml > max_daily:
             logger.warning(f"Daily limit for {pump_id} would be exceeded")
@@ -438,7 +620,7 @@ class DosingController:
         
         if success:
             # Update dosing history
-            self.dosing_history[pump_id]['daily_total'] += volume_ml
+            self.daily_totals[pump_id]['daily_total'] += volume_ml
             logger.info(f"Manual dose complete: {volume_ml:.1f}ml using {pump_id}")
             return True
         else:
@@ -453,16 +635,39 @@ class DosingController:
         """
         # Get latest sensor readings
         try:
-            ph = self.atlas.get_ph()
-            ec = self.atlas.get_ec()
-            
-            # Calculate adjustment needs
-            ph_pump, ph_dose = self._calculate_ph_dose(ph)
-            nutrient_type, nutrient_dose = self._calculate_nutrient_dose(ec)
-            
-            # Determine if adjustments are needed
-            ph_adjustment_needed = ph_pump is not None and ph_dose > 0
-            ec_adjustment_needed = nutrient_type is not None and sum(nutrient_dose) > 0 if isinstance(nutrient_dose, tuple) else nutrient_dose > 0
+            if self.atlas is None:
+                # Handle case where sensors are not detected
+                ph = "sensor not detected"
+                ec = "sensor not detected"
+                
+                # When sensors are not detected, we can't determine if adjustments are needed
+                ph_adjustment_needed = False
+                ec_adjustment_needed = False
+                ph_pump = None
+                ph_dose = 0
+                nutrient_type = None
+                nutrient_dose = 0
+            else:
+                # Get readings from Atlas
+                ph = self.atlas.read_ph()
+                ec = self.atlas.read_ec()
+                
+                # Calculate adjustment needs if we have numeric readings
+                if isinstance(ph, (int, float)) and isinstance(ec, (int, float)):
+                    ph_pump, ph_dose = self._calculate_ph_dose(ph)
+                    nutrient_type, nutrient_dose = self._calculate_nutrient_dose(ec)
+                    
+                    # Determine if adjustments are needed
+                    ph_adjustment_needed = ph_pump is not None and ph_dose > 0
+                    ec_adjustment_needed = nutrient_type is not None and sum(nutrient_dose) > 0 if isinstance(nutrient_dose, tuple) else nutrient_dose > 0
+                else:
+                    # If readings are not numeric, we can't determine if adjustments are needed
+                    ph_adjustment_needed = False
+                    ec_adjustment_needed = False
+                    ph_pump = None
+                    ph_dose = 0
+                    nutrient_type = None
+                    nutrient_dose = 0
             
             # Format time until next run
             time_to_next = max(0, self.next_run - time.time())
@@ -482,13 +687,14 @@ class DosingController:
                 'target_ec': self.settings.get('target_ec'),
                 'ec_adjustment_needed': ec_adjustment_needed,
                 'night_mode_active': self._is_night_mode_active(),
-                'dosing_history': self.dosing_history
+                'sensors_detected': self.atlas is not None
             }
         except Exception as e:
             logger.error(f"Error getting dosing status: {e}")
             return {
                 'running': self.running,
-                'error': str(e)
+                'error': str(e),
+                'sensors_detected': self.atlas is not None
             }
     
     def get_settings(self) -> Dict[str, Any]:
@@ -539,8 +745,8 @@ class DosingController:
                 self.settings['ec_tolerance'] = tol
             
             # Save settings to config
-            self.config.set_setting('dosing', self.settings)
-            self.config.save_config()
+            self.config_manager.set_setting('dosing', self.settings)
+            self.config_manager.save_config()
             
             logger.info(f"Updated target settings: {settings}")
             return True
@@ -578,8 +784,8 @@ class DosingController:
                     self.settings[key] = max_dose
             
             # Save settings to config
-            self.config.set_setting('dosing', self.settings)
-            self.config.save_config()
+            self.config_manager.set_setting('dosing', self.settings)
+            self.config_manager.save_config()
             
             logger.info(f"Updated nutrient settings: {settings}")
             return True
@@ -654,8 +860,8 @@ class DosingController:
                     return False
             
             # Save settings to config
-            self.config.set_setting('dosing', self.settings)
-            self.config.save_config()
+            self.config_manager.set_setting('dosing', self.settings)
+            self.config_manager.save_config()
             
             logger.info(f"Updated safety settings: {settings}")
             return True

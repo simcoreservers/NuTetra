@@ -19,12 +19,12 @@
     
     <nav>
         <ul>
-            <li><a href="{{ url_for('index') }}" {% if request.path == url_for('index') %}class="active"{% endif %}>Dashboard</a></li>
-            <li><a href="{{ url_for('dosing_settings') }}" {% if request.path == url_for('dosing_settings') %}class="active"{% endif %}>Dosing Settings</a></li>
-            <li><a href="{{ url_for('pump_control') }}" {% if request.path == url_for('pump_control') %}class="active"{% endif %}>Pump Control</a></li>
-            <li><a href="{{ url_for('alerts') }}" {% if request.path == url_for('alerts') %}class="active"{% endif %}>Alerts</a></li>
-            <li><a href="{{ url_for('logs') }}" {% if request.path == url_for('logs') %}class="active"{% endif %}>Logs</a></li>
-            <li><a href="{{ url_for('settings') }}" {% if request.path == url_for('settings') %}class="active"{% endif %}>System</a></li>
+            <li><a href="/" {% if request.path == '/' %}class="active"{% endif %}>Dashboard</a></li>
+            <li><a href="/dosing-settings" {% if request.path == '/dosing-settings' %}class="active"{% endif %}>Dosing Settings</a></li>
+            <li><a href="/pump-control" {% if request.path == '/pump-control' %}class="active"{% endif %}>Pump Control</a></li>
+            <li><a href="/alerts" {% if request.path == '/alerts' %}class="active"{% endif %}>Alerts</a></li>
+            <li><a href="/logs" {% if request.path == '/logs' %}class="active"{% endif %}>Logs</a></li>
+            <li><a href="/settings" {% if request.path == '/settings' %}class="active"{% endif %}>System</a></li>
         </ul>
     </nav>
     

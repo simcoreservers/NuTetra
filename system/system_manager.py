@@ -9,6 +9,7 @@ import time
 import json
 import logging
 import threading
+import random
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Tuple
@@ -119,10 +120,20 @@ class SystemManager:
         """Initialize system components"""
         try:
             # Initialize Atlas Sensors
-            self._initialize_atlas()
+            try:
+                self._initialize_atlas()
+            except Exception as e:
+                logger.error(f"Failed to initialize Atlas sensors: {e}")
+                self.atlas = None
+                self.system_state['errors'].append(f"Atlas initialization error: {e}")
             
             # Initialize Dosing Controller
-            self._initialize_dosing_controller()
+            try:
+                self._initialize_dosing_controller()
+            except Exception as e:
+                logger.error(f"Failed to initialize dosing controller: {e}")
+                self.dosing_controller = None
+                self.system_state['errors'].append(f"Dosing controller initialization error: {e}")
             
             # Update system state
             self.system_state['status'] = 'ready'
@@ -130,11 +141,13 @@ class SystemManager:
             # Start monitoring thread
             self._start_monitoring()
             
-            logger.info("System initialization successful")
+            logger.info("System initialization complete")
+            return True
         except Exception as e:
             logger.error(f"System initialization failed: {e}")
             self.system_state['status'] = 'error'
             self.system_state['errors'].append(f"Initialization error: {e}")
+            return False
     
     def _initialize_atlas(self):
         """Initialize Atlas Scientific sensors"""
@@ -212,11 +225,20 @@ class SystemManager:
     def _read_sensors(self):
         """Read values from all sensors"""
         try:
-            # Get readings from Atlas sensors
-            ph = self.atlas.read_ph()
-            ec = self.atlas.read_ec()
-            tds = self.atlas.read_tds()
-            temp = self.atlas.read_temperature()
+            # Check if Atlas interface is initialized
+            if self.atlas is None:
+                logger.warning("Atlas interface not initialized, marking sensors as not detected")
+                # Instead of simulated values, mark sensors as not detected
+                ph = "sensor not detected"
+                ec = "sensor not detected"
+                tds = "sensor not detected"
+                temp = "sensor not detected"
+            else:
+                # Get readings from Atlas sensors
+                ph = self.atlas.read_ph()
+                ec = self.atlas.read_ec()
+                tds = self.atlas.read_tds()
+                temp = self.atlas.read_temperature()
             
             # Update readings
             self.readings = {
@@ -231,12 +253,28 @@ class SystemManager:
             self.system_state['last_reading'] = self.readings['timestamp']
             
             # Log readings periodically
-            logger.debug(f"Sensor readings - pH: {ph}, EC: {ec}, TDS: {tds}, Temp: {temp}")
+            if self.atlas is None:
+                logger.debug("Sensor readings - all sensors not detected")
+            else:
+                logger.debug(f"Sensor readings - pH: {ph}, EC: {ec}, TDS: {tds}, Temp: {temp}")
             
             return self.readings
         except Exception as e:
             logger.error(f"Error reading sensors: {e}")
-            return None
+            
+            # Ensure we have some values even on error
+            if self.readings['timestamp'] is None:
+                # Mark sensors as not detected instead of generating values
+                self.readings = {
+                    'ph': "sensor not detected",
+                    'ec': "sensor not detected",
+                    'tds': "sensor not detected",
+                    'temperature': "sensor not detected",
+                    'timestamp': datetime.now().isoformat()
+                }
+                self.system_state['last_reading'] = self.readings['timestamp']
+            
+            return self.readings
     
     def _update_system_metrics(self):
         """Update system metrics like uptime, load, etc."""
@@ -269,22 +307,30 @@ class SystemManager:
         if not alerts_config.get('enabled', True):
             return  # Alerts disabled
         
-        # Check pH alerts
-        if self.readings['ph'] is not None:
+        # Add an alert if sensors are not detected
+        if (self.readings['ph'] == "sensor not detected" or 
+            self.readings['ec'] == "sensor not detected" or 
+            self.readings['tds'] == "sensor not detected" or 
+            self.readings['temperature'] == "sensor not detected"):
+            self._add_warning("One or more sensors not detected")
+            return
+        
+        # Check pH alerts - only if it's a numeric value
+        if isinstance(self.readings['ph'], (int, float)):
             if self.readings['ph'] < alerts_config.get('ph_min', 5.0):
                 self._add_warning(f"pH too low: {self.readings['ph']}")
             elif self.readings['ph'] > alerts_config.get('ph_max', 7.0):
                 self._add_warning(f"pH too high: {self.readings['ph']}")
         
-        # Check EC alerts
-        if self.readings['ec'] is not None:
+        # Check EC alerts - only if it's a numeric value
+        if isinstance(self.readings['ec'], (int, float)):
             if self.readings['ec'] < alerts_config.get('ec_min', 1.0):
                 self._add_warning(f"EC too low: {self.readings['ec']}")
             elif self.readings['ec'] > alerts_config.get('ec_max', 3.0):
                 self._add_warning(f"EC too high: {self.readings['ec']}")
         
-        # Check temperature alerts
-        if self.readings['temperature'] is not None:
+        # Check temperature alerts - only if it's a numeric value
+        if isinstance(self.readings['temperature'], (int, float)):
             if self.readings['temperature'] < alerts_config.get('temp_min', 15.0):
                 self._add_warning(f"Temperature too low: {self.readings['temperature']}")
             elif self.readings['temperature'] > alerts_config.get('temp_max', 30.0):
