@@ -7,11 +7,11 @@
     <h2>System Settings</h2>
     
     <div class="settings-tabs">
-        <button class="tab-button active" data-target="general-tab">General</button>
-        <button class="tab-button" data-target="network-tab">Network</button>
-        <button class="tab-button" data-target="hardware-tab">Hardware</button>
-        <button class="tab-button" data-target="notification-tab">Notifications</button>
-        <button class="tab-button" data-target="backup-tab">Backup/Restore</button>
+        <button class="tab-button active" onclick="switchTab('general-tab', this)">General</button>
+        <button class="tab-button" onclick="switchTab('network-tab', this)">Network</button>
+        <button class="tab-button" onclick="switchTab('hardware-tab', this)">Hardware</button>
+        <button class="tab-button" onclick="switchTab('notification-tab', this)">Notifications</button>
+        <button class="tab-button" onclick="switchTab('backup-tab', this)">Backup/Restore</button>
     </div>
     
     <div class="tab-content active" id="general-tab">
@@ -485,6 +485,34 @@
 
 {% block scripts %}
 <script>
+    // Direct tab switching function that doesn't rely on event listeners
+    function switchTab(tabId, buttonElement) {
+        console.log("Switching to tab:", tabId);
+        
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Show the selected tab content
+        const selectedTab = document.getElementById(tabId);
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        } else {
+            console.error("Tab content not found:", tabId);
+        }
+        
+        // Update button active state
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // Set the clicked button as active
+        buttonElement.classList.add('active');
+    }
+
     // Function to show/hide elements based on checkbox state
     function toggleVisibility(controlId, targetId) {
         const control = document.getElementById(controlId);
@@ -528,63 +556,6 @@
             }
         }
     }
-    
-    // Set up tab navigation - wrap in DOMContentLoaded to ensure DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM loaded, setting up tabs");
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        console.log("Found tab buttons:", tabButtons.length);
-        console.log("Found tab contents:", tabContents.length);
-        
-        // List all tab buttons and their targets for debugging
-        tabButtons.forEach(btn => {
-            console.log("Tab button:", btn.textContent.trim(), "Target:", btn.getAttribute('data-target'));
-        });
-        
-        // List all tab contents and their IDs for debugging
-        tabContents.forEach(content => {
-            console.log("Tab content ID:", content.id);
-        });
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const target = this.getAttribute('data-target');
-                console.log("Tab clicked:", this.textContent.trim(), "Target:", target);
-                
-                // Set active button
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Show target content
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === target) {
-                        console.log("Activating content:", content.id);
-                        content.classList.add('active');
-                    }
-                });
-            });
-        });
-        
-        console.log("Tab setup complete");
-    });
-    
-    // Set up toggle visibility (move inside DOMContentLoaded)
-    document.addEventListener('DOMContentLoaded', function() {
-        toggleVisibility('date-time-auto', 'manual-date-time');
-        toggleVisibility('ip-auto', 'static-ip-settings');
-        toggleVisibility('enable-auth', 'auth-settings', true);
-        toggleVisibility('enable-email', 'email-settings', true);
-        toggleVisibility('enable-push', 'push-settings', true);
-        
-        // Set up radio toggle
-        setupRadioToggle('push-service', {
-            'pushover': 'pushover-settings',
-            'telegram': 'telegram-settings'
-        });
-    });
     
     // Function to show status message
     function showStatusMessage(message, type = 'success') {
@@ -631,8 +602,58 @@
         }
     }
     
-    // Set up confirmation handlers (move inside DOMContentLoaded)
+    // Load system information
+    function loadSystemInfo() {
+        fetch('/api/system/info')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('system-name').textContent = data.system_name;
+                document.getElementById('software-version').textContent = data.version;
+                document.getElementById('system-uptime').textContent = data.uptime;
+                document.getElementById('hardware-platform').textContent = data.platform;
+                document.getElementById('cpu-temp').textContent = data.cpu_temp;
+                document.getElementById('detected-platform').textContent = data.platform;
+                document.getElementById('gpio-interface').textContent = data.gpio_interface;
+                document.getElementById('gpio-chip').textContent = data.gpio_chip ? `gpiochip${data.gpio_chip}` : 'Not detected';
+                
+                // Also set form values
+                document.getElementById('new-system-name').value = data.system_name;
+                
+                if (data.gpio_chip !== null) {
+                    document.getElementById('gpio-chip-select').value = data.gpio_chip;
+                }
+                
+                if (data.gpio_interface) {
+                    if (data.gpio_interface.includes('rpi_lgpio')) {
+                        document.getElementById('gpio-library').value = 'rpi_lgpio';
+                    } else if (data.gpio_interface.includes('lgpio')) {
+                        document.getElementById('gpio-library').value = 'lgpio';
+                    } else if (data.gpio_interface.includes('simulation')) {
+                        document.getElementById('gpio-library').value = 'simulation';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading system info:', error);
+            });
+    }
+
+    // Initialize everything when the DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
+        // Set up toggle visibility
+        toggleVisibility('date-time-auto', 'manual-date-time');
+        toggleVisibility('ip-auto', 'static-ip-settings');
+        toggleVisibility('enable-auth', 'auth-settings', true);
+        toggleVisibility('enable-email', 'email-settings', true);
+        toggleVisibility('enable-push', 'push-settings', true);
+        
+        // Set up radio toggle
+        setupRadioToggle('push-service', {
+            'pushover': 'pushover-settings',
+            'telegram': 'telegram-settings'
+        });
+        
+        // Set up confirmation handlers
         setupConfirmation('system-restart', 'Restart System', 
             'Are you sure you want to restart all nutetra services?', 
             function() {
@@ -740,46 +761,8 @@
                 }
             }
         );
-    });
-    
-    // Load system information
-    function loadSystemInfo() {
-        fetch('/api/system/info')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('system-name').textContent = data.system_name;
-                document.getElementById('software-version').textContent = data.version;
-                document.getElementById('system-uptime').textContent = data.uptime;
-                document.getElementById('hardware-platform').textContent = data.platform;
-                document.getElementById('cpu-temp').textContent = data.cpu_temp;
-                document.getElementById('detected-platform').textContent = data.platform;
-                document.getElementById('gpio-interface').textContent = data.gpio_interface;
-                document.getElementById('gpio-chip').textContent = data.gpio_chip ? `gpiochip${data.gpio_chip}` : 'Not detected';
-                
-                // Also set form values
-                document.getElementById('new-system-name').value = data.system_name;
-                
-                if (data.gpio_chip !== null) {
-                    document.getElementById('gpio-chip-select').value = data.gpio_chip;
-                }
-                
-                if (data.gpio_interface) {
-                    if (data.gpio_interface.includes('rpi_lgpio')) {
-                        document.getElementById('gpio-library').value = 'rpi_lgpio';
-                    } else if (data.gpio_interface.includes('lgpio')) {
-                        document.getElementById('gpio-library').value = 'lgpio';
-                    } else if (data.gpio_interface.includes('simulation')) {
-                        document.getElementById('gpio-library').value = 'simulation';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading system info:', error);
-            });
-    }
-    
-    // Save system name
-    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Add event listeners for buttons
         const saveSystemNameBtn = document.getElementById('save-system-name');
         if (saveSystemNameBtn) {
             saveSystemNameBtn.addEventListener('click', function() {
@@ -809,13 +792,8 @@
                     showStatusMessage('System name cannot be empty', 'error');
                 }
             });
-        } else {
-            console.error("Save system name button not found");
         }
-    });
-
-    // Save GPIO settings
-    document.addEventListener('DOMContentLoaded', function() {
+        
         const saveGpioBtn = document.getElementById('save-gpio-settings');
         if (saveGpioBtn) {
             saveGpioBtn.addEventListener('click', function() {
@@ -848,13 +826,8 @@
                     showStatusMessage(`Error: ${error.message}`, 'error');
                 });
             });
-        } else {
-            console.error("Save GPIO settings button not found");
         }
-    });
-    
-    // Test GPIO
-    document.addEventListener('DOMContentLoaded', function() {
+        
         const testGpioBtn = document.getElementById('test-gpio');
         if (testGpioBtn) {
             testGpioBtn.addEventListener('click', function() {
@@ -871,13 +844,8 @@
                         showStatusMessage(`Error: ${error.message}`, 'error');
                     });
             });
-        } else {
-            console.error("Test GPIO button not found");
         }
-    });
-    
-    // Save pin assignments
-    document.addEventListener('DOMContentLoaded', function() {
+        
         const savePinsBtn = document.getElementById('save-pin-assignments');
         if (savePinsBtn) {
             savePinsBtn.addEventListener('click', function() {
@@ -910,15 +878,12 @@
                     showStatusMessage(`Error: ${error.message}`, 'error');
                 });
             });
-        } else {
-            console.error("Save pin assignments button not found");
         }
-    });
-    
-    // Initialize system info on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("Loading system info");
+        
+        // Load system info
         loadSystemInfo();
+        
+        console.log("All initialization complete");
     });
 </script>
 {% endblock %} 
