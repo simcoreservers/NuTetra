@@ -373,11 +373,11 @@ document.addEventListener('DOMContentLoaded', function() {
     );
     
     setupConfirmation('factory-reset', 'Factory Reset', 
-        'WARNING: This will reset all settings and erase all data. This cannot be undone!',
+        'WARNING: This will reset all settings and erase all data. This cannot be undone! Type "RESET" to confirm.',
         function() {
             const confirmInput = document.getElementById('confirm-reset');
             
-            if (confirmInput.value === 'RESET') {
+            if (confirmInput && confirmInput.value === 'RESET') {
                 // Send factory reset request
                 fetch('/api/system/factory-reset', { method: 'POST' })
                     .then(response => response.json())
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         showStatusMessage(`Error: ${error.message}`, 'error');
                     });
             } else {
-                showStatusMessage('Please type "RESET" to confirm factory reset', 'error');
+                showStatusMessage('Please type "RESET" in the confirmation field to proceed with factory reset', 'error');
             }
         }
     );
