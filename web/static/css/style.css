@@ -560,14 +560,13 @@ footer {
     background-color: var(--light-bg);
 }
 
-.tab-content {
-    display: none !important;
+/* Hide all tabcontent by default */
+.tabcontent {
+    display: none;
+    animation: fadeIn 0.3s ease;
 }
 
-.tab-content[style*="display: block"] {
-    display: block !important;
-}
-
+/* Fade in animation for tab content */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

@@ -1,43 +1,8 @@
 /**
  * NuTetra System Settings JavaScript
- * Handles tab navigation, toggle visibility, and API requests for the system settings page
+ * Handles toggle visibility, API requests, and other functionality for the system settings page
+ * Note: Tab functionality is handled directly in the HTML template
  */
-
-// Tab switching function with direct style manipulation
-function showTab(tabId) {
-    console.log("showTab called for:", tabId);
-    
-    // Hide all tab contents with !important
-    document.querySelectorAll('.tab-content').forEach(function(tab) {
-        tab.style.cssText = 'display: none !important';
-        console.log("Hiding tab:", tab.id);
-    });
-    
-    // Show the selected tab with !important
-    var selectedTab = document.getElementById(tabId);
-    if (selectedTab) {
-        selectedTab.style.cssText = 'display: block !important';
-        console.log("Showing tab:", tabId);
-    } else {
-        console.error("Tab not found:", tabId);
-    }
-    
-    // Update buttons
-    document.querySelectorAll('.tab-button').forEach(function(btn) {
-        btn.classList.remove('active');
-        btn.style.background = '';
-        btn.style.color = '';
-        console.log("Removing active class from button:", btn.id);
-    });
-    
-    var activeButton = document.getElementById('btn-' + tabId);
-    if (activeButton) {
-        activeButton.classList.add('active');
-        console.log("Added active class to button:", activeButton.id);
-    } else {
-        console.error("Button not found for tab:", tabId);
-    }
-}
 
 // Function to show/hide elements based on checkbox state
 function toggleVisibility(controlId, targetId) {
@@ -313,9 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modal) {
         modal.style.display = 'none';
     }
-    
-    // Make sure the first tab is shown
-    showTab('general-tab');
     
     // Set up toggle visibility
     toggleVisibility('date-time-auto', 'manual-date-time');

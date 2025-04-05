@@ -7,14 +7,14 @@
     <h2>System Settings</h2>
     
     <div class="settings-tabs">
-        <button class="tab-button active" id="btn-general-tab" onclick="showTab('general-tab')" style="background: #4caf50; color: white;">General</button>
-        <button class="tab-button" id="btn-network-tab" onclick="showTab('network-tab')">Network</button>
-        <button class="tab-button" id="btn-hardware-tab" onclick="showTab('hardware-tab')">Hardware</button>
-        <button class="tab-button" id="btn-notification-tab" onclick="showTab('notification-tab')">Notifications</button>
-        <button class="tab-button" id="btn-backup-tab" onclick="showTab('backup-tab')">Backup/Restore</button>
+        <button class="tab-button" onclick="openTab(event, 'general-tab')" id="defaultOpen">General</button>
+        <button class="tab-button" onclick="openTab(event, 'network-tab')">Network</button>
+        <button class="tab-button" onclick="openTab(event, 'hardware-tab')">Hardware</button>
+        <button class="tab-button" onclick="openTab(event, 'notification-tab')">Notifications</button>
+        <button class="tab-button" onclick="openTab(event, 'backup-tab')">Backup/Restore</button>
     </div>
     
-    <div class="tab-content" id="general-tab" style="display: block !important;">
+    <div id="general-tab" class="tabcontent">
         <div class="card">
             <h3>System Information</h3>
             <div class="info-grid">
@@ -111,7 +111,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="network-tab" style="display: none !important;">
+    <div id="network-tab" class="tabcontent">
         <div class="card">
             <h3>Network Settings</h3>
             <div class="form-group">
@@ -217,7 +217,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="hardware-tab" style="display: none !important;">
+    <div id="hardware-tab" class="tabcontent">
         <div class="card">
             <h3>Hardware Configuration</h3>
             <div class="hardware-info">
@@ -314,7 +314,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="notification-tab" style="display: none !important;">
+    <div id="notification-tab" class="tabcontent">
         <div class="card">
             <h3>Email Notifications</h3>
             <div class="form-group">
@@ -411,7 +411,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="backup-tab" style="display: none !important;">
+    <div id="backup-tab" class="tabcontent">
         <div class="card">
             <h3>System Backup</h3>
             <p>Back up your system configuration, sensor history, and custom settings.</p>
@@ -484,5 +484,30 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+// Simple vanilla tab system
+function openTab(evt, tabName) {
+    // Hide all tab content
+    var tabcontent = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    
+    // Remove active class from all buttons
+    var tabbuttons = document.getElementsByClassName("tab-button");
+    for (var i = 0; i < tabbuttons.length; i++) {
+        tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+    }
+    
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+
+// Open the default tab on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById("defaultOpen").click();
+});
+</script>
 <script src="{{ url_for('static', filename='js/system_settings.js') }}"></script>
 {% endblock %} 
