@@ -7,10 +7,10 @@
     <div class="card">
         <h2>Target Values</h2>
         <div class="settings-form">
-            <div class="form-section">
+        <div class="form-section">
                 <h3>Optimal Range Settings</h3>
-                <div class="form-group">
-                    <label for="target-ph">Target pH:</label>
+            <div class="form-group">
+                <label for="target-ph">Target pH:</label>
                     <input type="number" id="target-ph" name="target-ph" step="0.1" min="4.0" max="9.0" placeholder="6.0">
                 </div>
                 <div class="form-group">
@@ -29,11 +29,11 @@
             
             <div class="form-section">
                 <h3>Reservoir Information</h3>
-                <div class="form-group">
+            <div class="form-group">
                     <label for="reservoir-volume">Reservoir Volume (liters):</label>
                     <input type="number" id="reservoir-volume" name="reservoir-volume" step="1" min="1" max="1000" placeholder="100">
-                </div>
-                <div class="form-group">
+            </div>
+            <div class="form-group">
                     <label for="water-added">Water Added (liters):</label>
                     <input type="number" id="water-added" name="water-added" step="0.1" min="0" max="1000" placeholder="0">
                 </div>
@@ -66,20 +66,20 @@
             <div class="button-group">
                 <button class="btn primary-btn" id="save-target-settings">Save Target Settings</button>
             </div>
+            </div>
         </div>
-    </div>
-
+        
     <div class="card">
         <h2>Nutrient Settings</h2>
         <div class="settings-form">
-            <div class="form-section">
+        <div class="form-section">
                 <h3>Nutrient Mixture</h3>
-                <div class="form-group">
+            <div class="form-group">
                     <label for="nutrient-ratio">Nutrient A:B Ratio:</label>
                     <input type="number" id="nutrient-ratio" name="nutrient-ratio" step="0.1" min="0.1" max="10.0" placeholder="1.0">
                     <span class="input-help">1.0 means equal parts A and B. Higher values mean more of A.</span>
-                </div>
-                <div class="form-group">
+            </div>
+            <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="adjust-ph-first" name="adjust-ph-first" checked>
                         <label for="adjust-ph-first">Adjust pH before nutrients</label>
@@ -97,18 +97,18 @@
                     <label for="stabilization-time-ph">pH Stabilization Time (seconds):</label>
                     <input type="number" id="stabilization-time-ph" name="stabilization-time-ph" step="30" min="30" max="3600" placeholder="300">
                 </div>
-                <div class="form-group">
+            <div class="form-group">
                     <label for="stabilization-time-ec">EC Stabilization Time (seconds):</label>
                     <input type="number" id="stabilization-time-ec" name="stabilization-time-ec" step="30" min="30" max="3600" placeholder="600">
                 </div>
             </div>
-
+            
             <div class="button-group">
                 <button class="btn primary-btn" id="save-nutrient-settings">Save Nutrient Settings</button>
             </div>
         </div>
-    </div>
-    
+            </div>
+            
     <div class="card">
         <h2>Safety Limits</h2>
         <div class="settings-form">
@@ -130,40 +130,40 @@
                 <div class="form-group">
                     <label for="max-nutrient-b">Maximum Nutrient B (ml/day):</label>
                     <input type="number" id="max-nutrient-b" name="max-nutrient-b" step="5" min="0" max="1000" placeholder="200">
-                </div>
             </div>
-
-            <div class="form-section">
+        </div>
+        
+        <div class="form-section">
                 <h3>Dosing Efficiency</h3>
                 <p class="safety-note">These values determine how much solution is needed per unit change. Adjust if your nutrients have different concentrations.</p>
                 <div class="form-group">
                     <label for="efficiency-ph-up">pH Up Efficiency (ml per 0.1 pH decrease per 100L):</label>
                     <input type="number" id="efficiency-ph-up" name="efficiency-ph-up" step="0.1" min="0.1" max="10.0" placeholder="0.5">
                 </div>
-                <div class="form-group">
+            <div class="form-group">
                     <label for="efficiency-ph-down">pH Down Efficiency (ml per 0.1 pH increase per 100L):</label>
                     <input type="number" id="efficiency-ph-down" name="efficiency-ph-down" step="0.1" min="0.1" max="10.0" placeholder="0.5">
-                </div>
-                <div class="form-group">
+            </div>
+            <div class="form-group">
                     <label for="efficiency-nutrient-a">Nutrient A Efficiency (ml per 100 µS/cm increase per 100L):</label>
                     <input type="number" id="efficiency-nutrient-a" name="efficiency-nutrient-a" step="0.5" min="0.5" max="50.0" placeholder="5.0">
-                </div>
-                <div class="form-group">
+            </div>
+            <div class="form-group">
                     <label for="efficiency-nutrient-b">Nutrient B Efficiency (ml per 100 µS/cm increase per 100L):</label>
                     <input type="number" id="efficiency-nutrient-b" name="efficiency-nutrient-b" step="0.5" min="0.5" max="50.0" placeholder="5.0">
                 </div>
             </div>
-
+            
             <div class="button-group">
                 <button class="btn primary-btn" id="save-safety-settings">Save Safety Settings</button>
             </div>
+            </div>
         </div>
-    </div>
-    
+        
     <div class="card">
         <h2>Manual Dosing</h2>
         <div class="manual-dosing-container">
-            <div class="form-section">
+        <div class="form-section">
                 <h3>Manual Dose Control</h3>
                 <div class="dosing-control-grid">
                     <div class="dosing-control">
@@ -213,8 +213,8 @@
                 </div>
             </div>
         </div>
-    </div>
-    
+            </div>
+            
     <div class="card">
         <h2>Dosing Status</h2>
         <div class="dosing-status-container">
@@ -282,7 +282,7 @@
                 <button class="btn danger-btn" id="emergency-stop">Emergency Stop All Pumps</button>
             </div>
         </div>
-    </div>
+        </div>
 </div>
 {% endblock %}
 

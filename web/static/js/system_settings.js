@@ -61,7 +61,7 @@ function showStatusMessage(message, type = 'success') {
     }, 3000);
 }
 
-// Confirmation modal setup for regular confirmations (no text input)
+// Confirmation modal setup
 function setupConfirmation(buttonId, title, message, onConfirm) {
     const button = document.getElementById(buttonId);
     const modal = document.getElementById('confirmation-modal');
@@ -69,18 +69,11 @@ function setupConfirmation(buttonId, title, message, onConfirm) {
     const modalMessage = document.getElementById('modal-message');
     const confirmButton = document.getElementById('modal-confirm');
     const cancelButton = document.getElementById('modal-cancel');
-    const resetInputContainer = document.getElementById('reset-input-container');
     
     if (button) {
         button.addEventListener('click', function() {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
-            
-            // Hide the reset input for regular confirmations
-            if (resetInputContainer) {
-                resetInputContainer.style.display = 'none';
-            }
-            
             modal.style.display = 'flex';
             
             // Set up temporary confirm handler
@@ -110,82 +103,6 @@ function setupConfirmation(buttonId, title, message, onConfirm) {
                 if (event.key === 'Escape') {
                     modal.style.display = 'none';
                     confirmButton.removeEventListener('click', confirmHandler);
-                }
-            });
-        });
-    }
-}
-
-// Special confirmation with text verification for factory reset
-function setupFactoryReset() {
-    const button = document.getElementById('factory-reset');
-    const modal = document.getElementById('confirmation-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalMessage = document.getElementById('modal-message');
-    const confirmButton = document.getElementById('modal-confirm');
-    const cancelButton = document.getElementById('modal-cancel');
-    const resetInputContainer = document.getElementById('reset-input-container');
-    const resetInput = document.getElementById('confirm-reset');
-    
-    if (button && resetInputContainer && resetInput) {
-        button.addEventListener('click', function() {
-            // Set up the modal for factory reset
-            modalTitle.textContent = 'Factory Reset';
-            modalMessage.textContent = 'WARNING: This will reset all settings and erase all data. This cannot be undone! Type "RESET" to confirm:';
-            
-            // Show the reset input
-            resetInputContainer.style.display = 'block';
-            resetInput.value = ''; // Clear any previous value
-            
-            modal.style.display = 'flex';
-            
-            // Set focus to the input field
-            setTimeout(() => resetInput.focus(), 100);
-            
-            // Set up confirm handler with input verification
-            const confirmHandler = function() {
-                if (resetInput.value === 'RESET') {
-                    // User typed RESET, proceed with reset
-                    fetch('/api/system/factory-reset', { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                showStatusMessage('Factory reset initiated. System will reboot.', 'success');
-                                
-                                setTimeout(() => {
-                                    window.location.href = '/';
-                                }, 5000);
-                            } else {
-                                showStatusMessage(`Error: ${data.message}`, 'error');
-                            }
-                        })
-                        .catch(error => {
-                            showStatusMessage(`Error: ${error.message}`, 'error');
-                        });
-                } else {
-                    // User didn't type RESET correctly
-                    showStatusMessage('Please type "RESET" to confirm factory reset', 'error');
-                    // Keep the modal open
-                    return;
-                }
-                
-                // Close the modal
-                modal.style.display = 'none';
-                confirmButton.removeEventListener('click', confirmHandler);
-            };
-            
-            confirmButton.addEventListener('click', confirmHandler);
-            
-            cancelButton.addEventListener('click', function() {
-                modal.style.display = 'none';
-                confirmButton.removeEventListener('click', confirmHandler);
-            });
-            
-            // Submit on Enter key when typing in the field
-            resetInput.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    confirmHandler();
                 }
             });
         });
@@ -455,8 +372,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     );
     
-    // Set up factory reset confirmation with RESET verification
-    setupFactoryReset();
+    setupConfirmation('factory-reset', 'Factory Reset', 
+        'WARNING: This will reset all settings and erase all data. This cannot be undone!',
+        function() {
+            const confirmInput = document.getElementById('confirm-reset');
+            
+            if (confirmInput.value === 'RESET') {
+                // Send factory reset request
+                fetch('/api/system/factory-reset', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatusMessage('Factory reset initiated. System will reboot.', 'success');
+                            
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 5000);
+                        } else {
+                            showStatusMessage(`Error: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatusMessage(`Error: ${error.message}`, 'error');
+                    });
+            } else {
+                showStatusMessage('Please type "RESET" to confirm factory reset', 'error');
+            }
+        }
+    );
     
     // Setup event handlers for buttons
     setupEventHandlers();
