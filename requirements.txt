@@ -2,7 +2,7 @@
 # For Raspberry Pi 5 on Pi OS
 
 # GPIO Control for Raspberry Pi 5
-lgpio>=0.4.0
+lgpio>=0.2.2.0
 
 # Web Server and Framework
 Flask>=2.0.1
