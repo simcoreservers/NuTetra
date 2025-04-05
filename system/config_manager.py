@@ -1,298 +1,311 @@
 #!/usr/bin/env python3
-# NuTetra Configuration Manager
-# Handles system settings and configuration
-
+"""
+NuTetra Hydroponic System - Configuration Manager
+Manages system configuration storage and retrieval
+"""
 import os
 import json
 import logging
 from pathlib import Path
+from typing import Dict, Any, Optional, List
+
+logger = logging.getLogger("NuTetra.Config")
 
 class ConfigManager:
-    def __init__(self, config_path="/NuTetra/data/config.json"):
-        self.logger = logging.getLogger("NuTetra.Config")
-        self.logger.info("Initializing Configuration Manager")
+    """Manages system configuration storage and retrieval"""
+    
+    def __init__(self, config_path: str = "/NuTetra/config/config.json"):
+        """Initialize the configuration manager
         
+        Args:
+            config_path: Path to the configuration file
+        """
         self.config_path = config_path
+        self.config = {}
         
-        # Default configuration values
-        self.defaults = {
-            "system": {
-                "name": "NuTetra Hydroponic System",
-                "version": "1.0.0"
+        # Ensure config directory exists
+        self._ensure_config_dir()
+        
+        # Load configuration
+        self.load_config()
+        
+        # Set default configuration if needed
+        self._set_defaults()
+        
+        logger.info("Configuration manager initialized")
+    
+    def _ensure_config_dir(self):
+        """Ensure the configuration directory exists"""
+        config_dir = os.path.dirname(self.config_path)
+        try:
+            Path(config_dir).mkdir(parents=True, exist_ok=True)
+            logger.info(f"Ensured config directory exists: {config_dir}")
+        except Exception as e:
+            logger.error(f"Error creating config directory: {e}")
+            # Use a fallback path in the current directory
+            self.config_path = "config.json"
+            logger.warning(f"Using fallback config path: {self.config_path}")
+    
+    def _set_defaults(self):
+        """Set default configuration values"""
+        defaults = {
+            # System configuration
+            'system': {
+                'name': 'NuTetra',
+                'version': '1.0.0',
+                'log_level': 'INFO',
+                'data_dir': '/NuTetra/data'
             },
-            "sensors": {
-                "ph": {
-                    "target_min": 5.8,
-                    "target_max": 6.2,
-                    "alert_min": 5.5,
-                    "alert_max": 6.5,
-                    "calibration": {
-                        "offset": 0.0,
-                        "scale": 1.0
-                    }
-                },
-                "ec": {
-                    "target_min": 1.0,  # mS/cm
-                    "target_max": 1.6,  # mS/cm
-                    "alert_min": 0.8,   # mS/cm
-                    "alert_max": 1.8,   # mS/cm
-                    "calibration": {
-                        "offset": 0.0,
-                        "scale": 1.0
-                    }
-                },
-                "temperature": {
-                    "target_min": 18.0,  # Celsius
-                    "target_max": 22.0,  # Celsius
-                    "alert_min": 15.0,   # Celsius
-                    "alert_max": 25.0,   # Celsius
-                    "calibration": {
-                        "offset": 0.0,
-                        "scale": 1.0
-                    }
-                },
-                "reading_interval": 2.0  # seconds
+            
+            # GPIO configuration
+            'gpio': {
+                'chip': 4,  # Default to chip 4 for RPi 5
+                'library': 'rpi-lgpio',  # Options: rpi-lgpio, lgpio, simulation
+                'simulation_mode': False
             },
-            "dosing": {
-                "pumps": {
-                    "ph_up": {
-                        "pin": 5,
-                        "name": "pH Up",
-                        "flow_rate": 1.0,  # mL per second
-                        "enabled": True
-                    },
-                    "ph_down": {
-                        "pin": 6,
-                        "name": "pH Down",
-                        "flow_rate": 1.0,  # mL per second
-                        "enabled": True
-                    },
-                    "nutrient_a": {
-                        "pin": 13,
-                        "name": "Nutrient A",
-                        "flow_rate": 1.2,  # mL per second
-                        "enabled": True
-                    },
-                    "nutrient_b": {
-                        "pin": 19,
-                        "name": "Nutrient B",
-                        "flow_rate": 1.2,  # mL per second
-                        "enabled": True
-                    }
+            
+            # I2C configuration
+            'i2c': {
+                'bus': 1,
+                'enabled': True,
+                'ph_address': 0x63,
+                'ec_address': 0x64,
+                'temp_address': 0x66,
+                'cache_time': 2.0  # seconds
+            },
+            
+            # Pump configuration
+            'pumps': {
+                'ph_up': {
+                    'pin': 17,
+                    'flow_rate': 1.0  # ml/sec
                 },
-                "settings": {
-                    "min_dose_interval": 300,  # Minimum seconds between doses
-                    "max_daily_volume": {
-                        "ph_up": 50.0,        # Maximum daily volume in mL
-                        "ph_down": 50.0,
-                        "nutrient_a": 100.0,
-                        "nutrient_b": 100.0
-                    },
-                    "dose_amounts": {
-                        "ph_up": 0.5,         # Default dose amount in mL
-                        "ph_down": 0.5,
-                        "nutrient_a": 1.0,
-                        "nutrient_b": 1.0
-                    },
-                    "auto_dosing_enabled": True
+                'ph_down': {
+                    'pin': 18,
+                    'flow_rate': 1.0
+                },
+                'nutrient_a': {
+                    'pin': 22,
+                    'flow_rate': 1.0
+                },
+                'nutrient_b': {
+                    'pin': 23,
+                    'flow_rate': 1.0
+                },
+                'main': {
+                    'pin': 27
                 }
             },
-            "alerts": {
-                "email": {
-                    "enabled": False,
-                    "recipient": "",
-                    "smtp_server": "",
-                    "smtp_port": 587,
-                    "smtp_user": "",
-                    "smtp_password": ""
-                },
-                "sms": {
-                    "enabled": False,
-                    "phone_number": "",
-                    "provider": ""
-                },
-                "notification_interval": 3600  # seconds
+            
+            # Dosing configuration
+            'dosing': {
+                'target_ph': 6.0,
+                'ph_tolerance': 0.3,
+                'target_ec': 1.8,
+                'ec_tolerance': 0.2,
+                'dosing_frequency': 60,  # minutes
+                'dosing_cooldown': 15,   # minutes
+                'mixing_time': 30,       # seconds
+                'enable_night_mode': False,
+                'night_start': '22:00',
+                'night_end': '06:00',
+                'ph_up_rate': 1.0,       # ml/sec
+                'ph_down_rate': 1.0,     # ml/sec
+                'nutrient_a_rate': 1.0,  # ml/sec
+                'nutrient_b_rate': 1.0,  # ml/sec
+                'max_ph_adjustment': 20, # ml
+                'max_nutrient_dose': 20, # ml
+                'max_daily_ph_up': 100,  # ml
+                'max_daily_ph_down': 100,# ml
+                'max_daily_nutrient': 200 # ml
             },
-            "ui": {
-                "theme": "dark",
-                "display_units": {
-                    "temperature": "celsius",  # or fahrenheit
-                    "volume": "ml"
-                },
-                "screensaver_timeout": 300,  # seconds
-                "brightness": 80  # percentage
-            },
-            "logging": {
-                "level": "INFO",
-                "max_log_size_mb": 10,
-                "max_log_files": 5,
-                "data_log_interval": 300  # seconds
-            },
-            "network": {
-                "hostname": "nutetra",
-                "wifi": {
-                    "ssid": "",
-                    "psk": "",
-                    "enable_ap": True,
-                    "ap_ssid": "NuTetra",
-                    "ap_psk": "hydroponics"
-                }
+            
+            # Alerting configuration
+            'alerts': {
+                'enabled': True,
+                'ph_min': 5.0,
+                'ph_max': 7.0,
+                'ec_min': 1.0,
+                'ec_max': 3.0,
+                'temp_min': 15.0,
+                'temp_max': 30.0
             }
         }
         
-        # Load or create configuration
-        self.config = self.load_config()
+        # Update config with defaults for missing sections
+        for section, settings in defaults.items():
+            if section not in self.config:
+                self.config[section] = settings
+            else:
+                # Update existing section with any missing default values
+                for key, value in settings.items():
+                    if key not in self.config[section]:
+                        self.config[section][key] = value
+        
+        # Save the updated configuration
+        self.save_config()
     
-    def load_config(self):
-        """Load configuration from file or create defaults"""
+    def load_config(self) -> bool:
+        """Load configuration from file
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
         try:
             if os.path.exists(self.config_path):
                 with open(self.config_path, 'r') as f:
-                    config = json.load(f)
-                    self.logger.info("Configuration loaded from file")
-                    
-                    # Merge with defaults to ensure all settings exist
-                    merged_config = self._deep_merge(self.defaults.copy(), config)
-                    return merged_config
+                    self.config = json.load(f)
+                logger.info(f"Loaded configuration from {self.config_path}")
+                return True
             else:
-                self.logger.info("Configuration file not found, using defaults")
-                # Ensure directory exists
-                Path(os.path.dirname(self.config_path)).mkdir(parents=True, exist_ok=True)
-                # Save defaults
-                self.save_config(self.defaults)
-                return self.defaults.copy()
-                
+                logger.warning(f"Configuration file not found: {self.config_path}")
+                return False
         except Exception as e:
-            self.logger.error(f"Error loading configuration: {e}")
-            return self.defaults.copy()
+            logger.error(f"Error loading configuration: {e}")
+            return False
     
-    def save_config(self, config=None):
-        """Save configuration to file"""
-        if config is None:
-            config = self.config
-            
+    def save_config(self) -> bool:
+        """Save configuration to file
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
         try:
-            # Ensure directory exists
-            Path(os.path.dirname(self.config_path)).mkdir(parents=True, exist_ok=True)
-            
             with open(self.config_path, 'w') as f:
-                json.dump(config, f, indent=2)
-                
-            self.logger.info("Configuration saved to file")
+                json.dump(self.config, f, indent=4)
+            logger.info(f"Saved configuration to {self.config_path}")
             return True
-            
         except Exception as e:
-            self.logger.error(f"Error saving configuration: {e}")
+            logger.error(f"Error saving configuration: {e}")
             return False
     
-    def get(self, section, key=None, default=None):
-        """
-        Get a configuration value
-        section: Top-level section (e.g., 'sensors', 'dosing')
-        key: Optional sub-key (e.g., 'ph', 'target_min')
-        default: Value to return if key doesn't exist
-        """
-        try:
-            if section not in self.config:
-                return default
-                
-            if key is None:
-                return self.config[section]
-                
-            # Handle nested keys (e.g., 'sensors.ph.target_min')
-            if '.' in key:
-                parts = key.split('.')
-                value = self.config[section]
-                
-                for part in parts:
-                    if part in value:
-                        value = value[part]
-                    else:
-                        return default
-                        
-                return value
-            else:
-                return self.config[section].get(key, default)
-                
-        except Exception as e:
-            self.logger.error(f"Error getting config value [{section}.{key}]: {e}")
-            return default
-    
-    def set(self, section, key, value):
-        """
-        Set a configuration value
-        section: Top-level section (e.g., 'sensors', 'dosing')
-        key: Key to set (can be nested using dots, e.g., 'ph.target_min')
-        value: Value to set
-        """
-        try:
-            if section not in self.config:
-                self.config[section] = {}
-                
-            # Handle nested keys (e.g., 'ph.target_min')
-            if '.' in key:
-                parts = key.split('.')
-                config_section = self.config[section]
-                
-                # Navigate to the deepest level
-                for part in parts[:-1]:
-                    if part not in config_section:
-                        config_section[part] = {}
-                    config_section = config_section[part]
-                    
-                # Set the value
-                config_section[parts[-1]] = value
-            else:
-                self.config[section][key] = value
-                
-            # Save the updated configuration
-            self.save_config()
-            self.logger.debug(f"Set config value [{section}.{key}] = {value}")
-            return True
+    def get_setting(self, section: str, default: Any = None) -> Any:
+        """Get a configuration section
+        
+        Args:
+            section: Configuration section name
+            default: Default value if section doesn't exist
             
-        except Exception as e:
-            self.logger.error(f"Error setting config value [{section}.{key}]: {e}")
-            return False
-    
-    def _deep_merge(self, dest, src):
+        Returns:
+            Configuration value or default
         """
-        Deep merge two dictionaries
-        Values from src override those in dest
-        """
-        for key, value in src.items():
-            if key in dest and isinstance(dest[key], dict) and isinstance(value, dict):
-                self._deep_merge(dest[key], value)
-            else:
-                dest[key] = value
-        return dest
+        return self.config.get(section, default)
     
-    def reset_to_defaults(self):
-        """Reset configuration to defaults"""
-        self.config = self.defaults.copy()
-        self.save_config()
-        self.logger.info("Configuration reset to defaults")
+    def set_setting(self, section: str, value: Any) -> bool:
+        """Set a configuration section
+        
+        Args:
+            section: Configuration section name
+            value: Value to set
+            
+        Returns:
+            bool: True if successful
+        """
+        self.config[section] = value
         return True
     
-    def export_config(self, export_path):
-        """Export configuration to a file"""
+    def get_subsetting(self, section: str, key: str, default: Any = None) -> Any:
+        """Get a specific setting within a section
+        
+        Args:
+            section: Configuration section name
+            key: Setting key within the section
+            default: Default value if key doesn't exist
+            
+        Returns:
+            Setting value or default
+        """
+        if section in self.config:
+            return self.config[section].get(key, default)
+        return default
+    
+    def set_subsetting(self, section: str, key: str, value: Any) -> bool:
+        """Set a specific setting within a section
+        
+        Args:
+            section: Configuration section name
+            key: Setting key within the section
+            value: Value to set
+            
+        Returns:
+            bool: True if successful
+        """
+        if section not in self.config:
+            self.config[section] = {}
+        
+        self.config[section][key] = value
+        return True
+    
+    def reset_to_defaults(self) -> bool:
+        """Reset all configuration to defaults
+        
+        Returns:
+            bool: True if successful
+        """
+        self.config = {}
+        self._set_defaults()
+        logger.info("Reset configuration to defaults")
+        return True
+    
+    def reset_section(self, section: str) -> bool:
+        """Reset a specific configuration section to defaults
+        
+        Args:
+            section: Configuration section to reset
+            
+        Returns:
+            bool: True if successful
+        """
+        if section in self.config:
+            del self.config[section]
+            self._set_defaults()
+            logger.info(f"Reset {section} configuration to defaults")
+            return True
+        return False
+    
+    def export_config(self, export_path: str) -> bool:
+        """Export configuration to a different file
+        
+        Args:
+            export_path: Path to export the configuration to
+            
+        Returns:
+            bool: True if successful
+        """
         try:
             with open(export_path, 'w') as f:
-                json.dump(self.config, f, indent=2)
+                json.dump(self.config, f, indent=4)
+            logger.info(f"Exported configuration to {export_path}")
             return True
         except Exception as e:
-            self.logger.error(f"Error exporting configuration: {e}")
+            logger.error(f"Error exporting configuration: {e}")
             return False
     
-    def import_config(self, import_path):
-        """Import configuration from a file"""
-        try:
-            with open(import_path, 'r') as f:
-                imported = json.load(f)
+    def import_config(self, import_path: str) -> bool:
+        """Import configuration from a different file
+        
+        Args:
+            import_path: Path to import the configuration from
             
-            # Merge with defaults to ensure all required settings exist
-            self.config = self._deep_merge(self.defaults.copy(), imported)
-            self.save_config()
-            return True
+        Returns:
+            bool: True if successful
+        """
+        try:
+            if os.path.exists(import_path):
+                with open(import_path, 'r') as f:
+                    new_config = json.load(f)
+                
+                # Update configuration
+                self.config.update(new_config)
+                
+                # Save the updated configuration
+                self.save_config()
+                
+                logger.info(f"Imported configuration from {import_path}")
+                return True
+            else:
+                logger.error(f"Import file not found: {import_path}")
+                return False
         except Exception as e:
-            self.logger.error(f"Error importing configuration: {e}")
+            logger.error(f"Error importing configuration: {e}")
             return False 

@@ -1,29 +1,28 @@
-# NuTetra Hydroponic Automation System Requirements
-# For Raspberry Pi 5 on Pi OS
+# NuTetra Hydroponic System Dependencies
 
-# GPIO Control for Raspberry Pi 5
-lgpio>=0.2.2.0
+# Web Framework
+Flask==2.2.3
+Flask-SocketIO==5.3.3
+Werkzeug==2.2.3
 
-# Web Server and Framework
-Flask>=2.0.1
-Flask-SocketIO>=5.1.1
-gunicorn>=20.1.0
-
-# Utility libraries
-numpy>=1.19.5
-pandas>=1.3.0
-pyserial>=3.5
-requests>=2.25.1
-
-# For sensor interfacing (specific to your hardware)
-# Uncomment as needed:
-# adafruit-circuitpython-ads1x15>=2.2.9  # For ADC conversion
-# w1thermsensor>=2.0.0                   # For DS18B20 temperature sensors 
-
-flask==2.3.3
-flask-socketio==5.3.5
+# SocketIO dependencies
 eventlet==0.33.3
-python-dotenv==1.0.0
-RPi.GPIO==0.7.1
-adafruit-circuitpython-ads1x15==2.4.2
-adafruit-blinka==8.23.0 
+python-socketio==5.8.0
+python-engineio==4.4.1
+
+# Hardware Interface 
+# Comment out hardware-specific packages if developing on non-Raspberry Pi
+# Install manually on the Raspberry Pi
+# lgpio
+# RPi.GPIO
+# smbus2
+
+# System Monitoring
+psutil==5.9.5
+
+# Data Handling
+numpy==1.24.3
+pandas==2.0.0
+
+# For Testing
+pytest==7.3.1 

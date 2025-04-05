@@ -1,151 +1,105 @@
 #!/bin/bash
-# nutetra Hydroponic System Installation Script
-# This script installs and configures the nutetra web application to start automatically on boot
+# NuTetra Hydroponic System Installation Script
+# This script sets up the NuTetra system as a service
 
-set -e # Exit on error
+# Exit on error
+set -e
 
-# Terminal colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+echo "NuTetra Hydroponic System Installation"
+echo "======================================"
 
-echo -e "${GREEN}=======================================${NC}"
-echo -e "${GREEN}nutetra Hydroponic System Installation${NC}"
-echo -e "${GREEN}=======================================${NC}"
-
-# Ensure script is run as root
+# Check if running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}Please run as root (use sudo).${NC}"
+  echo "Please run as root (use sudo)"
   exit 1
 fi
 
-# Get the directory where the script is located
+# Determine script location
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-cd "$SCRIPT_DIR"
+echo "Installing from directory: $SCRIPT_DIR"
 
-# Create log directory
-mkdir -p logs
-touch logs/install.log
-LOGFILE="$SCRIPT_DIR/logs/install.log"
+# Create required directories
+echo "Creating required directories..."
+mkdir -p /NuTetra/logs
+mkdir -p /NuTetra/data
+mkdir -p /NuTetra/config
+mkdir -p /NuTetra/exports
+chmod -R 777 /NuTetra
 
-# Log function
-log() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOGFILE"
-}
+# Install system dependencies
+echo "Installing system dependencies..."
+apt-get update
+apt-get install -y python3 python3-pip python3-venv
 
-# Install dependencies
-install_dependencies() {
-  log "Installing system dependencies..."
-  apt-get update
-  apt-get install -y python3 python3-pip python3-venv chromium-browser
+# Create virtual environment
+echo "Setting up Python virtual environment..."
+python3 -m venv /NuTetra/venv
+source /NuTetra/venv/bin/activate
 
-  log "Creating Python virtual environment..."
-  python3 -m venv venv
-  source venv/bin/activate
+# Install Python dependencies
+echo "Installing Python packages..."
+pip install --upgrade pip
+pip install -r $SCRIPT_DIR/requirements.txt
 
-  log "Installing Python dependencies..."
-  pip install --upgrade pip
-  pip install -r requirements.txt
+# Copy application files
+echo "Copying application files..."
+rsync -av --exclude=".git" --exclude="__pycache__" --exclude="*.pyc" $SCRIPT_DIR/ /NuTetra/app/
 
-  log "Dependencies installed successfully."
-}
-
-# Create necessary directories
-create_directories() {
-  log "Creating necessary directories..."
-  mkdir -p logs
-  mkdir -p settings
-  mkdir -p data/history
-  
-  log "Setting permissions..."
-  # Set owner to the user who will run the application
-  chown -R $SUDO_USER:$SUDO_USER "$SCRIPT_DIR"
-  
-  log "Directories created successfully."
-}
-
-# Create systemd service for auto-start
-create_systemd_service() {
-  log "Creating systemd service..."
-  
-  # Create nutetra service file
-  cat > /etc/systemd/system/nutetra.service << EOF
+# Create systemd service file
+echo "Creating systemd service..."
+cat > /etc/systemd/system/nutetra.service << EOF
 [Unit]
-Description=nutetra Hydroponic System
+Description=NuTetra Hydroponic System
 After=network.target
 
 [Service]
-User=$SUDO_USER
-WorkingDirectory=$SCRIPT_DIR
-ExecStart=$SCRIPT_DIR/venv/bin/python web/start.py --no-setup
-Restart=always
-RestartSec=5
+ExecStart=/NuTetra/venv/bin/python /NuTetra/app/web/start.py
+WorkingDirectory=/NuTetra/app
 StandardOutput=journal
 StandardError=journal
+Restart=always
+User=root
+Group=root
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-  # Enable and start the service
-  systemctl daemon-reload
-  systemctl enable nutetra.service
-  
-  log "Systemd service created successfully."
-}
+# Create systemd service for web kiosk mode (optional)
+echo "Creating kiosk mode service (optional)..."
+cat > /etc/systemd/system/nutetra-kiosk.service << EOF
+[Unit]
+Description=NuTetra Kiosk Mode
+After=nutetra.service
+Requires=nutetra.service
 
-# Setup Chromium kiosk mode (optional)
-setup_kiosk_mode() {
-  log "Setting up Chromium kiosk mode..."
-  
-  # Create autostart directory if it doesn't exist
-  mkdir -p /home/$SUDO_USER/.config/autostart
-  
-  # Create desktop entry for Chromium kiosk mode
-  cat > /home/$SUDO_USER/.config/autostart/nutetra-kiosk.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=nutetra Kiosk
-Exec=chromium-browser --kiosk --incognito --noerrdialogs --disable-translate --no-first-run --fast --fast-start --disable-infobars --disable-features=TranslateUI --disk-cache-dir=/dev/null http://localhost:5000
-X-GNOME-Autostart-enabled=true
+[Service]
+Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/chromium-browser --kiosk --incognito --noerrdialogs --disable-translate --no-first-run --fast --fast-start --disable-infobars --disable-features=TranslateUI --disk-cache-dir=/dev/null http://localhost:5000
+Restart=always
+RestartSec=5
+User=pi
+Group=pi
+
+[Install]
+WantedBy=graphical.target
 EOF
 
-  # Set proper ownership
-  chown -R $SUDO_USER:$SUDO_USER /home/$SUDO_USER/.config/autostart
-  
-  log "Kiosk mode setup successfully."
-}
+# Enable and start services
+echo "Enabling and starting NuTetra service..."
+systemctl daemon-reload
+systemctl enable nutetra.service
+systemctl start nutetra.service
 
-# Main installation process
-main() {
-  echo -e "${YELLOW}Starting installation...${NC}"
-  log "Beginning nutetra installation"
-  
-  # Install dependencies
-  install_dependencies
-  
-  # Create directories
-  create_directories
-  
-  # Create systemd service
-  create_systemd_service
-  
-  # Ask about kiosk mode
-  echo -e "${YELLOW}Do you want to set up Chromium kiosk mode? (y/n)${NC}"
-  read -r answer
-  if [[ "$answer" =~ ^[Yy]$ ]]; then
-    setup_kiosk_mode
-  fi
-  
-  # Start the service
-  echo -e "${YELLOW}Starting nutetra service...${NC}"
-  systemctl start nutetra.service
-  
-  echo -e "${GREEN}Installation completed successfully!${NC}"
-  echo -e "${GREEN}nutetra is running at: http://localhost:5000${NC}"
-  log "Installation completed successfully"
-}
-
-# Run the main installation process
-main 
+echo "Installation complete!"
+echo ""
+echo "To start the kiosk mode (only on Raspberry Pi with desktop):"
+echo "sudo systemctl enable nutetra-kiosk.service"
+echo "sudo systemctl start nutetra-kiosk.service"
+echo ""
+echo "The web interface is available at: http://localhost:5000"
+echo "Visit this URL from any device on your network using your Raspberry Pi's IP address"
+echo ""
+echo "Check logs with: sudo journalctl -u nutetra.service -f" 
