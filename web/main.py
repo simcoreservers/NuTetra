@@ -9,6 +9,12 @@ import signal
 import logging
 import threading
 from pathlib import Path
+
+# Adjust paths for new location
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
 
@@ -34,8 +40,8 @@ logger = logging.getLogger("NuTetra")
 
 # Create Flask application
 app = Flask(__name__, 
-    static_folder='web/static',
-    template_folder='web/templates'
+    static_folder='static',
+    template_folder='templates'
 )
 app.config['SECRET_KEY'] = 'nutetra-secret-key'
 socketio = SocketIO(app)
@@ -449,164 +455,114 @@ def update_pin_assignments():
 
 @app.route('/api/system/test-gpio', methods=['POST'])
 def test_gpio():
-    """Test GPIO functionality"""
+    """Test GPIO pins by toggling a pump"""
     try:
-        # Test if we can read GPIO chip
-        if hasattr(nutetra.pumps, 'simulation_mode') and nutetra.pumps.simulation_mode:
-            return jsonify({
-                'success': True, 
-                'message': "Running in simulation mode - GPIO test simulated"
-            })
-            
-        # Try to toggle a pin briefly
-        test_result = None
-        if hasattr(nutetra.pumps, 'handle') and nutetra.pumps.handle is not None:
-            test_result = True
-            
-        if test_result:
-            return jsonify({
-                'success': True, 
-                'message': "GPIO test successful"
-            })
-        else:
-            return jsonify({
-                'success': False, 
-                'message': "GPIO test failed - could not access GPIO chip"
-            })
-            
+        data = request.json
+        pump = data.get('pump')
+        duration = float(data.get('duration', 1.0))
+        
+        if not pump:
+            return jsonify({'success': False, 'message': 'No pump specified'})
+        
+        # Run the pump briefly
+        success = nutetra.pumps.run_pump_for_seconds(pump, duration)
+        
+        return jsonify({
+            'success': success,
+            'message': f"Pump {pump} test {'successful' if success else 'failed'}"
+        })
     except Exception as e:
         logger.error(f"Error testing GPIO: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/system/name', methods=['POST'])
-def update_system_name():
-    """Update the system name"""
-    try:
-        data = request.json
-        new_name = data.get('name', 'NuTetra')
-        
-        # Update system name in config
-        system_config = nutetra.config.get_setting('system', {})
-        system_config['name'] = new_name
-        nutetra.config.set_setting('system', system_config)
-        nutetra.config.save_config()
-        
-        return jsonify({
-            'success': True, 
-            'message': "System name updated successfully"
-        })
-    except Exception as e:
-        logger.error(f"Error updating system name: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
 @app.route('/api/system/restart', methods=['POST'])
-def restart_services():
-    """Restart NuTetra services"""
+def restart_service():
+    """Restart the nutetra service"""
     try:
-        # Schedule a restart of the service (not a full reboot)
-        # This is a placeholder - actual implementation depends on your system setup
-        logger.info("System service restart requested via API")
+        import subprocess
+        # Run restart in a separate thread to allow response
+        def restart_thread():
+            time.sleep(1)  # Give time for response
+            subprocess.call(['sudo', 'systemctl', 'restart', 'nutetra.service'])
         
-        # In a real implementation, you might use systemd to restart the service
-        # For example: subprocess.run(['systemctl', 'restart', 'nutetra.service'])
-        
-        # For testing purposes, just return success
-        return jsonify({
-            'success': True, 
-            'message': "Service restart initiated"
-        })
+        threading.Thread(target=restart_thread, daemon=True).start()
+        return jsonify({'success': True, 'message': 'Restarting service...'})
     except Exception as e:
-        logger.error(f"Error restarting services: {e}")
+        logger.error(f"Error restarting service: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/system/reboot', methods=['POST'])
 def reboot_system():
-    """Reboot the Raspberry Pi"""
+    """Reboot the system"""
     try:
-        # Schedule a system reboot
-        logger.info("System reboot requested via API")
+        import subprocess
+        # Run reboot in a separate thread to allow response
+        def reboot_thread():
+            time.sleep(1)  # Give time for response
+            subprocess.call(['sudo', 'reboot'])
         
-        # In a real implementation, you would use os.system or subprocess
-        # For example: subprocess.run(['sudo', 'reboot'])
-        
-        # For testing purposes, just return success
-        return jsonify({
-            'success': True, 
-            'message': "System reboot initiated"
-        })
+        threading.Thread(target=reboot_thread, daemon=True).start()
+        return jsonify({'success': True, 'message': 'Rebooting system...'})
     except Exception as e:
         logger.error(f"Error rebooting system: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/system/clear-logs', methods=['POST'])
-def clear_system_logs():
+def clear_logs():
     """Clear system logs"""
     try:
-        # Clear the logs
-        logger.info("Log clearing requested via API")
+        import glob
+        log_files = glob.glob('/NuTetra/logs/*.log*')
+        for file in log_files:
+            try:
+                if os.path.isfile(file):
+                    os.truncate(file, 0)
+            except Exception as e:
+                logger.error(f"Error clearing log file {file}: {e}")
         
-        # In a real implementation, you might truncate log files
-        # For example: open('/NuTetra/logs/nutetra.log', 'w').close()
-        
-        # For testing purposes, just return success
-        return jsonify({
-            'success': True, 
-            'message': "System logs cleared"
-        })
+        return jsonify({'success': True, 'message': 'Logs cleared'})
     except Exception as e:
         logger.error(f"Error clearing logs: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/system/factory-reset', methods=['POST'])
 def factory_reset():
-    """Perform a factory reset"""
+    """Factory reset the system"""
     try:
-        # Perform a factory reset
-        logger.info("Factory reset requested via API")
+        # Reset config to defaults
+        nutetra.config.reset_to_defaults()
         
-        # In a real implementation, you would reset all configs to default
-        # For example:
-        # nutetra.config.reset_to_defaults()
-        # nutetra.config.save_config()
+        # Clear all history
+        import shutil
+        try:
+            shutil.rmtree('/NuTetra/data/history')
+            os.makedirs('/NuTetra/data/history', exist_ok=True)
+        except Exception as e:
+            logger.error(f"Error clearing history: {e}")
         
-        # For testing purposes, just return success
-        return jsonify({
-            'success': True, 
-            'message': "Factory reset initiated. System will reboot."
-        })
+        # Clear logs
+        clear_logs()
+        
+        # Return success
+        return jsonify({'success': True, 'message': 'Factory reset complete. Restart service to apply changes.'})
     except Exception as e:
         logger.error(f"Error performing factory reset: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
-# Logs and history API
-@app.route('/api/logs/sensor', methods=['GET'])
-def get_sensor_logs():
-    """Get sensor reading history"""
-    days = request.args.get('days', 1, type=int)
-    return jsonify(nutetra.data_logger.get_sensor_history(days=days))
+# SocketIO event handlers
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    logger.info(f"Client connected: {request.sid}")
 
-@app.route('/api/logs/dosing', methods=['GET'])
-def get_dosing_logs():
-    """Get dosing event history"""
-    days = request.args.get('days', 1, type=int)
-    return jsonify(nutetra.data_logger.get_dosing_history(days=days))
-
-# Error handlers
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('error.html', error='Page not found'), 404
-
-@app.errorhandler(500)
-def server_error(e):
-    return render_template('error.html', error='Internal server error'), 500
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnect"""
+    logger.info(f"Client disconnected: {request.sid}")
 
 if __name__ == '__main__':
-    # Start the NuTetra system
+    # Start the nutetra system
     nutetra.start()
     
     # Run the web server
-    host = os.environ.get('NUTETRA_HOST', '0.0.0.0')
-    port = int(os.environ.get('NUTETRA_PORT', 5000))
-    
-    # Use Socket.IO to run the app
-    socketio.run(app, host=host, port=port, debug=False)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False) 

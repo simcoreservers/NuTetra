@@ -10,6 +10,11 @@ import argparse
 import logging
 import time
 
+# Make sure we can import from parent directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +42,7 @@ def check_dependencies():
             logger.error(f"Failed to install dependencies: {e}")
             return False
 
-def start_web_server(host='0.0.0.0', port=5000, debug=False):
+def start_web_server(host='0.0.0.0', port=5000, debug=False, no_setup=False):
     """Start the Flask web server."""
     try:
         # Change to the directory containing app.py
@@ -48,8 +53,24 @@ def start_web_server(host='0.0.0.0', port=5000, debug=False):
             os.environ['FLASK_ENV'] = 'development'
             os.environ['FLASK_DEBUG'] = '1'
         
-        # Import and run the app
-        from app import socketio, app
+        # Import directly from main.py in the same directory
+        try:
+            # Import from main.py in the web directory (new approach)
+            # Note: We no longer try to import from parent_dir/main.py
+            from main import app, socketio, nutetra
+            logger.info("Successfully imported Flask app from web/main.py")
+            
+            # Initialize the NuTetra system if not in no-setup mode
+            if not no_setup:
+                logger.info("Initializing NuTetra system from main.py")
+                nutetra.start()
+                
+        except ImportError as e:
+            logger.error(f"Could not import from web/main.py: {e}")
+            logger.error("Please ensure main.py is in the web directory")
+            return False
+        
+        # Start the web server
         logger.info(f"Starting web server on {host}:{port}...")
         socketio.run(app, host=host, port=port, debug=debug)
         
@@ -110,7 +131,7 @@ Group=pi
 [Install]
 WantedBy=graphical.target
 """)
-            
+        
             # Enable Chromium service
             subprocess.run(["systemctl", "--user", "enable", "nutetra-chromium.service"])
             logger.info("Chromium kiosk mode service has been configured to start on boot.")
@@ -120,7 +141,7 @@ WantedBy=graphical.target
         logger.info("nutetra web service has been configured to start on boot.")
         
         return True
-    
+            
     except Exception as e:
         logger.error(f"Failed to setup autostart: {e}")
         return False
@@ -146,4 +167,4 @@ if __name__ == "__main__":
             sys.exit(1)
     
     # Start the web server
-    start_web_server(args.host, args.port, args.debug) 
+    start_web_server(args.host, args.port, args.debug, args.no_setup) 
