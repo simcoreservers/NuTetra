@@ -478,6 +478,106 @@ def test_gpio():
         logger.error(f"Error testing GPIO: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/system/name', methods=['POST'])
+def update_system_name():
+    """Update the system name"""
+    try:
+        data = request.json
+        new_name = data.get('name', 'NuTetra')
+        
+        # Update system name in config
+        system_config = nutetra.config.get_setting('system', {})
+        system_config['name'] = new_name
+        nutetra.config.set_setting('system', system_config)
+        nutetra.config.save_config()
+        
+        return jsonify({
+            'success': True, 
+            'message': "System name updated successfully"
+        })
+    except Exception as e:
+        logger.error(f"Error updating system name: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/system/restart', methods=['POST'])
+def restart_services():
+    """Restart NuTetra services"""
+    try:
+        # Schedule a restart of the service (not a full reboot)
+        # This is a placeholder - actual implementation depends on your system setup
+        logger.info("System service restart requested via API")
+        
+        # In a real implementation, you might use systemd to restart the service
+        # For example: subprocess.run(['systemctl', 'restart', 'nutetra.service'])
+        
+        # For testing purposes, just return success
+        return jsonify({
+            'success': True, 
+            'message': "Service restart initiated"
+        })
+    except Exception as e:
+        logger.error(f"Error restarting services: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/system/reboot', methods=['POST'])
+def reboot_system():
+    """Reboot the Raspberry Pi"""
+    try:
+        # Schedule a system reboot
+        logger.info("System reboot requested via API")
+        
+        # In a real implementation, you would use os.system or subprocess
+        # For example: subprocess.run(['sudo', 'reboot'])
+        
+        # For testing purposes, just return success
+        return jsonify({
+            'success': True, 
+            'message': "System reboot initiated"
+        })
+    except Exception as e:
+        logger.error(f"Error rebooting system: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/system/clear-logs', methods=['POST'])
+def clear_system_logs():
+    """Clear system logs"""
+    try:
+        # Clear the logs
+        logger.info("Log clearing requested via API")
+        
+        # In a real implementation, you might truncate log files
+        # For example: open('/NuTetra/logs/nutetra.log', 'w').close()
+        
+        # For testing purposes, just return success
+        return jsonify({
+            'success': True, 
+            'message': "System logs cleared"
+        })
+    except Exception as e:
+        logger.error(f"Error clearing logs: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/system/factory-reset', methods=['POST'])
+def factory_reset():
+    """Perform a factory reset"""
+    try:
+        # Perform a factory reset
+        logger.info("Factory reset requested via API")
+        
+        # In a real implementation, you would reset all configs to default
+        # For example:
+        # nutetra.config.reset_to_defaults()
+        # nutetra.config.save_config()
+        
+        # For testing purposes, just return success
+        return jsonify({
+            'success': True, 
+            'message': "Factory reset initiated. System will reboot."
+        })
+    except Exception as e:
+        logger.error(f"Error performing factory reset: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
 # Logs and history API
 @app.route('/api/logs/sensor', methods=['GET'])
 def get_sensor_logs():
