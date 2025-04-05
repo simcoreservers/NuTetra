@@ -109,7 +109,7 @@ function setupConfirmation(buttonId, title, message, onConfirm) {
         button.addEventListener('click', function() {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
-            modal.style.display = 'block';
+            modal.style.display = 'flex';
             
             // Set up temporary confirm handler
             const confirmHandler = function() {
@@ -123,6 +123,22 @@ function setupConfirmation(buttonId, title, message, onConfirm) {
             cancelButton.addEventListener('click', function() {
                 modal.style.display = 'none';
                 confirmButton.removeEventListener('click', confirmHandler);
+            });
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                    confirmButton.removeEventListener('click', confirmHandler);
+                }
+            });
+            
+            // Close modal with escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    modal.style.display = 'none';
+                    confirmButton.removeEventListener('click', confirmHandler);
+                }
             });
         });
     }
@@ -291,6 +307,12 @@ function setupEventHandlers() {
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded - initializing system settings page");
+    
+    // Ensure modal is hidden
+    const modal = document.getElementById('confirmation-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
     
     // Make sure the first tab is shown
     showTab('general-tab');
