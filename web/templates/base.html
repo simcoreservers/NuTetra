@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NuTetra Hydroponic System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>NuTetra Hydroponic System</h1>
+            <div id="clock">00:00:00</div>
+        </div>
+    </header>
+    
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}" {% if request.path == url_for('index') %}class="active"{% endif %}>Dashboard</a></li>
+            <li><a href="{{ url_for('dosing_settings') }}" {% if request.path == url_for('dosing_settings') %}class="active"{% endif %}>Dosing Settings</a></li>
+            <li><a href="{{ url_for('pump_control') }}" {% if request.path == url_for('pump_control') %}class="active"{% endif %}>Pump Control</a></li>
+            <li><a href="{{ url_for('alerts') }}" {% if request.path == url_for('alerts') %}class="active"{% endif %}>Alerts</a></li>
+            <li><a href="{{ url_for('logs') }}" {% if request.path == url_for('logs') %}class="active"{% endif %}>Logs</a></li>
+            <li><a href="{{ url_for('system_settings') }}" {% if request.path == url_for('system_settings') %}class="active"{% endif %}>System</a></li>
+        </ul>
+    </nav>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <p>&copy; 2023 NuTetra Hydroponic System</p>
+    </footer>
+    
+    <script>
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toTimeString().split(' ')[0];
+            document.getElementById('clock').textContent = timeString;
+        }
+        
+        // Initialize Socket.IO
+        const socket = io();
+        
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock();
+        
+        // Common Socket.IO event handlers
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - NuTetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-section">
+        <div class="card sensor-card" id="ph-card">
+            <h2>pH</h2>
+            <div class="sensor-value" id="ph-value">--</div>
+            <div class="sensor-chart-container">
+                <canvas id="ph-chart"></canvas>
+            </div>
+            <div class="status-indicator" id="ph-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Waiting for data...</span>
+            </div>
+        </div>
+
+        <div class="card sensor-card" id="ec-card">
+            <h2>EC</h2>
+            <div class="sensor-value" id="ec-value">--</div>
+            <div class="sensor-chart-container">
+                <canvas id="ec-chart"></canvas>
+            </div>
+            <div class="status-indicator" id="ec-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Waiting for data...</span>
+            </div>
+        </div>
+
+        <div class="card sensor-card" id="temp-card">
+            <h2>Temperature</h2>
+            <div class="sensor-value" id="temp-value">--</div>
+            <div class="sensor-chart-container">
+                <canvas id="temp-chart"></canvas>
+            </div>
+            <div class="status-indicator" id="temp-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Waiting for data...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <div class="card" id="pump-status-card">
+            <h2>Pump Status</h2>
+            <div class="pump-status-container">
+                <div class="pump-item">
+                    <span class="pump-label">Main Pump:</span>
+                    <span class="pump-status" id="main-pump-status">Unknown</span>
+                </div>
+                <div class="pump-item">
+                    <span class="pump-label">pH Up Pump:</span>
+                    <span class="pump-status" id="ph-up-pump-status">Unknown</span>
+                </div>
+                <div class="pump-item">
+                    <span class="pump-label">pH Down Pump:</span>
+                    <span class="pump-status" id="ph-down-pump-status">Unknown</span>
+                </div>
+                <div class="pump-item">
+                    <span class="pump-label">Nutrient A Pump:</span>
+                    <span class="pump-status" id="nutrient-a-pump-status">Unknown</span>
+                </div>
+                <div class="pump-item">
+                    <span class="pump-label">Nutrient B Pump:</span>
+                    <span class="pump-status" id="nutrient-b-pump-status">Unknown</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="system-status-card">
+            <h2>System Status</h2>
+            <div class="system-status">
+                <div class="status-item">
+                    <span class="status-label">System:</span>
+                    <span class="status-value" id="system-status">Unknown</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Last Dosing:</span>
+                    <span class="status-value" id="last-dosing">Never</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Next Dosing:</span>
+                    <span class="status-value" id="next-dosing">Not scheduled</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Alerts:</span>
+                    <span class="status-value" id="alerts-count">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const phChart = new Chart(document.getElementById('ph-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'pH',
+                data: [],
+                borderColor: '#3498db',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 4,
+                    max: 8
+                }
+            }
+        }
+    });
+
+    const ecChart = new Chart(document.getElementById('ec-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'EC',
+                data: [],
+                borderColor: '#2ecc71',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    const tempChart = new Chart(document.getElementById('temp-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Temperature',
+                data: [],
+                borderColor: '#e74c3c',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Function to update sensor status display
+    function updateSensorStatus(sensor, value, min, max) {
+        const statusElement = document.getElementById(`${sensor}-status`);
+        const statusDot = statusElement.querySelector('.status-dot');
+        const statusText = statusElement.querySelector('.status-text');
+        
+        if (value === null || value === undefined || value === '--') {
+            statusDot.className = 'status-dot status-unknown';
+            statusText.textContent = 'No data';
+            return;
+        }
+        
+        if (value < min) {
+            statusDot.className = 'status-dot status-low';
+            statusText.textContent = 'Low';
+        } else if (value > max) {
+            statusDot.className = 'status-dot status-high';
+            statusText.textContent = 'High';
+        } else {
+            statusDot.className = 'status-dot status-ok';
+            statusText.textContent = 'OK';
+        }
+    }
+
+    // Socket.IO event listeners for real-time updates
+    socket.on('sensor_data', function(data) {
+        // Update sensor values
+        document.getElementById('ph-value').textContent = data.ph ? data.ph.toFixed(2) : '--';
+        document.getElementById('ec-value').textContent = data.ec ? data.ec.toFixed(2) : '--';
+        document.getElementById('temp-value').textContent = data.temperature ? data.temperature.toFixed(1) + '°C' : '--';
+        
+        // Update charts
+        const time = new Date().toLocaleTimeString();
+        
+        if (data.ph !== null && data.ph !== undefined) {
+            phChart.data.labels.push(time);
+            phChart.data.datasets[0].data.push(data.ph);
+            if (phChart.data.labels.length > 20) {
+                phChart.data.labels.shift();
+                phChart.data.datasets[0].data.shift();
+            }
+            phChart.update();
+            updateSensorStatus('ph', data.ph, 5.5, 6.5);
+        }
+        
+        if (data.ec !== null && data.ec !== undefined) {
+            ecChart.data.labels.push(time);
+            ecChart.data.datasets[0].data.push(data.ec);
+            if (ecChart.data.labels.length > 20) {
+                ecChart.data.labels.shift();
+                ecChart.data.datasets[0].data.shift();
+            }
+            ecChart.update();
+            updateSensorStatus('ec', data.ec, 1.0, 3.0);
+        }
+        
+        if (data.temperature !== null && data.temperature !== undefined) {
+            tempChart.data.labels.push(time);
+            tempChart.data.datasets[0].data.push(data.temperature);
+            if (tempChart.data.labels.length > 20) {
+                tempChart.data.labels.shift();
+                tempChart.data.datasets[0].data.shift();
+            }
+            tempChart.update();
+            updateSensorStatus('temp', data.temperature, 18, 26);
+        }
+    });
+
+    socket.on('pump_status', function(data) {
+        document.getElementById('main-pump-status').textContent = data.main_pump ? 'ON' : 'OFF';
+        document.getElementById('ph-up-pump-status').textContent = data.ph_up ? 'ON' : 'OFF';
+        document.getElementById('ph-down-pump-status').textContent = data.ph_down ? 'ON' : 'OFF';
+        document.getElementById('nutrient-a-pump-status').textContent = data.nutrient_a ? 'ON' : 'OFF';
+        document.getElementById('nutrient-b-pump-status').textContent = data.nutrient_b ? 'ON' : 'OFF';
+        
+        // Add classes for styling
+        document.getElementById('main-pump-status').className = 'pump-status ' + (data.main_pump ? 'status-on' : 'status-off');
+        document.getElementById('ph-up-pump-status').className = 'pump-status ' + (data.ph_up ? 'status-on' : 'status-off');
+        document.getElementById('ph-down-pump-status').className = 'pump-status ' + (data.ph_down ? 'status-on' : 'status-off');
+        document.getElementById('nutrient-a-pump-status').className = 'pump-status ' + (data.nutrient_a ? 'status-on' : 'status-off');
+        document.getElementById('nutrient-b-pump-status').className = 'pump-status ' + (data.nutrient_b ? 'status-on' : 'status-off');
+    });
+
+    socket.on('system_status', function(data) {
+        document.getElementById('system-status').textContent = data.status;
+        document.getElementById('last-dosing').textContent = data.last_dosing || 'Never';
+        document.getElementById('next-dosing').textContent = data.next_dosing || 'Not scheduled';
+        document.getElementById('alerts-count').textContent = data.alerts_count || 0;
+        
+        // Set class based on system status
+        document.getElementById('system-status').className = 'status-value status-' + data.status.toLowerCase();
+    });
+
+    // Request initial data when page loads
+    socket.emit('request_sensor_data');
+    socket.emit('request_pump_status');
+    socket.emit('request_system_status');
+</script>
+{% endblock %} 

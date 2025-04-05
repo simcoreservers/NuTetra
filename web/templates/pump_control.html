@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Pump Control - NuTetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="pump-control-container">
+    <h2>Pump Control</h2>
+    
+    <div class="alert-box" id="control-alert">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-message">
+            Manual pump control should be used with caution. Ensure that proper safety measures are in place.
+        </div>
+        <button class="alert-close" onclick="this.parentElement.style.display='none';">×</button>
+    </div>
+    
+    <div class="pumps-grid">
+        <div class="pump-control-card">
+            <h3>Main Pump</h3>
+            <div class="pump-status-display">
+                <div class="status-indicator">
+                    <span class="status-dot" id="main-pump-indicator"></span>
+                    <span class="status-text" id="main-pump-text">Unknown</span>
+                </div>
+            </div>
+            <div class="pump-actions">
+                <button class="btn primary-btn" id="main-pump-start">Start</button>
+                <button class="btn danger-btn" id="main-pump-stop">Stop</button>
+            </div>
+            <div class="pump-timer">
+                <label for="main-pump-duration">Run Duration (seconds):</label>
+                <div class="timer-controls">
+                    <input type="number" id="main-pump-duration" min="1" max="300" value="10">
+                    <button class="btn secondary-btn" id="main-pump-timed">Run Timed</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pump-control-card">
+            <h3>pH Up Pump</h3>
+            <div class="pump-status-display">
+                <div class="status-indicator">
+                    <span class="status-dot" id="ph-up-indicator"></span>
+                    <span class="status-text" id="ph-up-text">Unknown</span>
+                </div>
+            </div>
+            <div class="pump-actions">
+                <button class="btn primary-btn" id="ph-up-start">Start</button>
+                <button class="btn danger-btn" id="ph-up-stop">Stop</button>
+            </div>
+            <div class="pump-timer">
+                <label for="ph-up-duration">Run Duration (seconds):</label>
+                <div class="timer-controls">
+                    <input type="number" id="ph-up-duration" min="1" max="60" value="5">
+                    <button class="btn secondary-btn" id="ph-up-timed">Run Timed</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pump-control-card">
+            <h3>pH Down Pump</h3>
+            <div class="pump-status-display">
+                <div class="status-indicator">
+                    <span class="status-dot" id="ph-down-indicator"></span>
+                    <span class="status-text" id="ph-down-text">Unknown</span>
+                </div>
+            </div>
+            <div class="pump-actions">
+                <button class="btn primary-btn" id="ph-down-start">Start</button>
+                <button class="btn danger-btn" id="ph-down-stop">Stop</button>
+            </div>
+            <div class="pump-timer">
+                <label for="ph-down-duration">Run Duration (seconds):</label>
+                <div class="timer-controls">
+                    <input type="number" id="ph-down-duration" min="1" max="60" value="5">
+                    <button class="btn secondary-btn" id="ph-down-timed">Run Timed</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pump-control-card">
+            <h3>Nutrient A Pump</h3>
+            <div class="pump-status-display">
+                <div class="status-indicator">
+                    <span class="status-dot" id="nutrient-a-indicator"></span>
+                    <span class="status-text" id="nutrient-a-text">Unknown</span>
+                </div>
+            </div>
+            <div class="pump-actions">
+                <button class="btn primary-btn" id="nutrient-a-start">Start</button>
+                <button class="btn danger-btn" id="nutrient-a-stop">Stop</button>
+            </div>
+            <div class="pump-timer">
+                <label for="nutrient-a-duration">Run Duration (seconds):</label>
+                <div class="timer-controls">
+                    <input type="number" id="nutrient-a-duration" min="1" max="60" value="5">
+                    <button class="btn secondary-btn" id="nutrient-a-timed">Run Timed</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="pump-control-card">
+            <h3>Nutrient B Pump</h3>
+            <div class="pump-status-display">
+                <div class="status-indicator">
+                    <span class="status-dot" id="nutrient-b-indicator"></span>
+                    <span class="status-text" id="nutrient-b-text">Unknown</span>
+                </div>
+            </div>
+            <div class="pump-actions">
+                <button class="btn primary-btn" id="nutrient-b-start">Start</button>
+                <button class="btn danger-btn" id="nutrient-b-stop">Stop</button>
+            </div>
+            <div class="pump-timer">
+                <label for="nutrient-b-duration">Run Duration (seconds):</label>
+                <div class="timer-controls">
+                    <input type="number" id="nutrient-b-duration" min="1" max="60" value="5">
+                    <button class="btn secondary-btn" id="nutrient-b-timed">Run Timed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="pump-log-container">
+        <h3>Pump Activity Log</h3>
+        <div class="pump-log" id="pump-log">
+            <div class="log-entry">System initialized. Ready for pump control.</div>
+        </div>
+    </div>
+</div>
+
+<div id="status-message" class="status-message"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Store active timers
+    const activeTimers = {};
+    
+    // Function to update pump status indicators
+    function updatePumpStatus(data) {
+        // Main pump
+        updatePumpIndicator('main-pump', data.main_pump);
+        
+        // pH pumps
+        updatePumpIndicator('ph-up', data.ph_up);
+        updatePumpIndicator('ph-down', data.ph_down);
+        
+        // Nutrient pumps
+        updatePumpIndicator('nutrient-a', data.nutrient_a);
+        updatePumpIndicator('nutrient-b', data.nutrient_b);
+    }
+    
+    function updatePumpIndicator(pumpId, isActive) {
+        const indicator = document.getElementById(`${pumpId}-indicator`);
+        const text = document.getElementById(`${pumpId}-text`);
+        
+        if (indicator && text) {
+            if (isActive) {
+                indicator.className = 'status-dot status-ok';
+                text.textContent = 'Running';
+                text.className = 'status-text status-on';
+            } else {
+                indicator.className = 'status-dot status-unknown';
+                text.textContent = 'Stopped';
+                text.className = 'status-text status-off';
+            }
+        }
+    }
+    
+    // Function to add log entry
+    function addLogEntry(message) {
+        const logContainer = document.getElementById('pump-log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        
+        const timestamp = new Date().toLocaleTimeString();
+        entry.textContent = `[${timestamp}] ${message}`;
+        
+        logContainer.insertBefore(entry, logContainer.firstChild);
+        
+        // Limit log entries
+        if (logContainer.children.length > 50) {
+            logContainer.removeChild(logContainer.lastChild);
+        }
+    }
+    
+    // Function to show status message
+    function showStatusMessage(message, type = 'success') {
+        const statusMessage = document.getElementById('status-message');
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message ${type}`;
+        
+        // Auto hide after 3 seconds
+        setTimeout(() => {
+            statusMessage.textContent = '';
+            statusMessage.className = 'status-message';
+        }, 3000);
+    }
+    
+    // Function to control pump
+    function controlPump(pumpId, action, duration = 0) {
+        // Cancel any existing timer for this pump
+        if (activeTimers[pumpId]) {
+            clearTimeout(activeTimers[pumpId]);
+            delete activeTimers[pumpId];
+        }
+        
+        socket.emit('control_pump', {
+            pump_id: pumpId,
+            action: action,
+            duration: duration
+        });
+        
+        // If this is a timed operation, set up auto-stop
+        if (action === 'start' && duration > 0) {
+            addLogEntry(`Starting ${pumpId} for ${duration} seconds`);
+            
+            // Set timer to stop the pump after duration
+            activeTimers[pumpId] = setTimeout(() => {
+                socket.emit('control_pump', {
+                    pump_id: pumpId,
+                    action: 'stop'
+                });
+                delete activeTimers[pumpId];
+            }, duration * 1000);
+        } else {
+            addLogEntry(`${action === 'start' ? 'Starting' : 'Stopping'} ${pumpId}`);
+        }
+    }
+    
+    // Set up socket listeners
+    socket.on('pump_status', updatePumpStatus);
+    
+    socket.on('pump_control_result', function(data) {
+        if (data.success) {
+            showStatusMessage(data.message, 'success');
+        } else {
+            showStatusMessage(`Error: ${data.message}`, 'error');
+            addLogEntry(`Error: ${data.message}`);
+        }
+    });
+    
+    // Set up event listeners for each pump
+    const pumps = ['main-pump', 'ph-up', 'ph-down', 'nutrient-a', 'nutrient-b'];
+    
+    pumps.forEach(pump => {
+        // Start button
+        document.getElementById(`${pump}-start`).addEventListener('click', function() {
+            controlPump(pump, 'start');
+        });
+        
+        // Stop button
+        document.getElementById(`${pump}-stop`).addEventListener('click', function() {
+            controlPump(pump, 'stop');
+        });
+        
+        // Timed run button
+        document.getElementById(`${pump}-timed`).addEventListener('click', function() {
+            const duration = parseInt(document.getElementById(`${pump}-duration`).value, 10);
+            if (isNaN(duration) || duration <= 0) {
+                showStatusMessage('Please enter a valid duration', 'error');
+                return;
+            }
+            controlPump(pump, 'start', duration);
+        });
+    });
+    
+    // Request initial pump status when page loads
+    window.addEventListener('load', function() {
+        socket.emit('request_pump_status');
+    });
+</script>
+{% endblock %} 

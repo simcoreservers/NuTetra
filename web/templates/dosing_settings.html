@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Dosing Settings - NuTetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h2>Dosing Settings</h2>
+    
+    <form id="dosing-settings-form" class="settings-form">
+        <div class="form-section">
+            <h3>Target Values</h3>
+            
+            <div class="form-group">
+                <label for="target-ph">Target pH:</label>
+                <input type="number" id="target-ph" name="target_ph" min="4.0" max="8.0" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ph-tolerance">pH Tolerance (±):</label>
+                <input type="number" id="ph-tolerance" name="ph_tolerance" min="0.1" max="1.0" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="target-ec">Target EC (mS/cm):</label>
+                <input type="number" id="target-ec" name="target_ec" min="0.5" max="5.0" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ec-tolerance">EC Tolerance (±):</label>
+                <input type="number" id="ec-tolerance" name="ec_tolerance" min="0.1" max="1.0" step="0.1" required>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Dosing Schedule</h3>
+            
+            <div class="form-group">
+                <label for="dosing-frequency">Check Frequency (minutes):</label>
+                <input type="number" id="dosing-frequency" name="dosing_frequency" min="10" max="1440" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="dosing-cooldown">Cooldown Between Dosing (minutes):</label>
+                <input type="number" id="dosing-cooldown" name="dosing_cooldown" min="5" max="120" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="mixing-time">Mixing Time After Dosing (seconds):</label>
+                <input type="number" id="mixing-time" name="mixing_time" min="10" max="300" step="1" required>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="enable-night-mode" name="enable_night_mode">
+                <label for="enable-night-mode">Enable Night Mode (No Dosing During Night Hours)</label>
+            </div>
+            
+            <div class="form-group time-range" id="night-hours-container">
+                <label>Night Hours:</label>
+                <div class="time-inputs">
+                    <input type="time" id="night-start" name="night_start">
+                    <span>to</span>
+                    <input type="time" id="night-end" name="night_end">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Pump Calibration</h3>
+            
+            <div class="form-group">
+                <label for="ph-up-rate">pH Up Pump Rate (ml/sec):</label>
+                <input type="number" id="ph-up-rate" name="ph_up_rate" min="0.1" max="10.0" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ph-down-rate">pH Down Pump Rate (ml/sec):</label>
+                <input type="number" id="ph-down-rate" name="ph_down_rate" min="0.1" max="10.0" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="nutrient-a-rate">Nutrient A Pump Rate (ml/sec):</label>
+                <input type="number" id="nutrient-a-rate" name="nutrient_a_rate" min="0.1" max="10.0" step="0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="nutrient-b-rate">Nutrient B Pump Rate (ml/sec):</label>
+                <input type="number" id="nutrient-b-rate" name="nutrient_b_rate" min="0.1" max="10.0" step="0.1" required>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3>Dosing Limits</h3>
+            
+            <div class="form-group">
+                <label for="max-ph-adjustment">Maximum pH Adjustment Per Dose (ml):</label>
+                <input type="number" id="max-ph-adjustment" name="max_ph_adjustment" min="1" max="100" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="max-nutrient-dose">Maximum Nutrient Dose (ml):</label>
+                <input type="number" id="max-nutrient-dose" name="max_nutrient_dose" min="1" max="100" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="max-daily-ph-up">Maximum Daily pH Up (ml):</label>
+                <input type="number" id="max-daily-ph-up" name="max_daily_ph_up" min="1" max="1000" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="max-daily-ph-down">Maximum Daily pH Down (ml):</label>
+                <input type="number" id="max-daily-ph-down" name="max_daily_ph_down" min="1" max="1000" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="max-daily-nutrient">Maximum Daily Nutrient (ml):</label>
+                <input type="number" id="max-daily-nutrient" name="max_daily_nutrient" min="1" max="1000" step="1" required>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button type="submit" class="btn primary-btn">Save Settings</button>
+            <button type="button" id="restore-defaults" class="btn secondary-btn">Restore Defaults</button>
+        </div>
+    </form>
+</div>
+
+<div id="status-message" class="status-message"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle night hours inputs based on checkbox
+    const enableNightMode = document.getElementById('enable-night-mode');
+    const nightHoursContainer = document.getElementById('night-hours-container');
+    
+    function toggleNightHours() {
+        nightHoursContainer.style.display = enableNightMode.checked ? 'flex' : 'none';
+    }
+    
+    enableNightMode.addEventListener('change', toggleNightHours);
+    toggleNightHours(); // Initialize state
+    
+    // Load settings from server
+    function loadSettings() {
+        socket.emit('request_dosing_settings');
+    }
+    
+    // Update form with settings from server
+    socket.on('dosing_settings', function(data) {
+        document.getElementById('target-ph').value = data.target_ph;
+        document.getElementById('ph-tolerance').value = data.ph_tolerance;
+        document.getElementById('target-ec').value = data.target_ec;
+        document.getElementById('ec-tolerance').value = data.ec_tolerance;
+        document.getElementById('dosing-frequency').value = data.dosing_frequency;
+        document.getElementById('dosing-cooldown').value = data.dosing_cooldown;
+        document.getElementById('mixing-time').value = data.mixing_time;
+        document.getElementById('enable-night-mode').checked = data.enable_night_mode;
+        document.getElementById('night-start').value = data.night_start;
+        document.getElementById('night-end').value = data.night_end;
+        document.getElementById('ph-up-rate').value = data.ph_up_rate;
+        document.getElementById('ph-down-rate').value = data.ph_down_rate;
+        document.getElementById('nutrient-a-rate').value = data.nutrient_a_rate;
+        document.getElementById('nutrient-b-rate').value = data.nutrient_b_rate;
+        document.getElementById('max-ph-adjustment').value = data.max_ph_adjustment;
+        document.getElementById('max-nutrient-dose').value = data.max_nutrient_dose;
+        document.getElementById('max-daily-ph-up').value = data.max_daily_ph_up;
+        document.getElementById('max-daily-ph-down').value = data.max_daily_ph_down;
+        document.getElementById('max-daily-nutrient').value = data.max_daily_nutrient;
+        
+        toggleNightHours();
+    });
+    
+    // Handle form submission
+    const dosingSettingsForm = document.getElementById('dosing-settings-form');
+    const statusMessage = document.getElementById('status-message');
+    
+    dosingSettingsForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(dosingSettingsForm);
+        const settings = {};
+        
+        for (const [key, value] of formData.entries()) {
+            if (key === 'enable_night_mode') {
+                settings[key] = true;
+            } else if (key.startsWith('night_') && !document.getElementById('enable-night-mode').checked) {
+                continue; // Skip night settings if night mode is disabled
+            } else {
+                settings[key] = isNaN(value) ? value : Number(value);
+            }
+        }
+        
+        if (!settings.enable_night_mode) {
+            settings.enable_night_mode = false;
+        }
+        
+        socket.emit('update_dosing_settings', settings);
+    });
+    
+    // Handle settings update response
+    socket.on('settings_updated', function(data) {
+        statusMessage.textContent = 'Settings saved successfully!';
+        statusMessage.className = 'status-message success';
+        
+        setTimeout(function() {
+            statusMessage.textContent = '';
+            statusMessage.className = 'status-message';
+        }, 3000);
+    });
+    
+    socket.on('settings_error', function(data) {
+        statusMessage.textContent = 'Error: ' + data.message;
+        statusMessage.className = 'status-message error';
+    });
+    
+    // Restore defaults
+    document.getElementById('restore-defaults').addEventListener('click', function() {
+        if (confirm('Are you sure you want to restore default settings? Current settings will be lost.')) {
+            socket.emit('restore_default_dosing_settings');
+        }
+    });
+    
+    // Load settings when page loads
+    window.addEventListener('load', loadSettings);
+</script>
+{% endblock %} 
