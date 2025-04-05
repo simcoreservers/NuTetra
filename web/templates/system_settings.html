@@ -7,14 +7,14 @@
     <h2>System Settings</h2>
     
     <div class="settings-tabs">
-        <button class="tab-button active" onclick="switchTab('general-tab', this)">General</button>
-        <button class="tab-button" onclick="switchTab('network-tab', this)">Network</button>
-        <button class="tab-button" onclick="switchTab('hardware-tab', this)">Hardware</button>
-        <button class="tab-button" onclick="switchTab('notification-tab', this)">Notifications</button>
-        <button class="tab-button" onclick="switchTab('backup-tab', this)">Backup/Restore</button>
+        <button class="tab-button" id="btn-general-tab" onclick="showTab('general-tab')">General</button>
+        <button class="tab-button" id="btn-network-tab" onclick="showTab('network-tab')">Network</button>
+        <button class="tab-button" id="btn-hardware-tab" onclick="showTab('hardware-tab')">Hardware</button>
+        <button class="tab-button" id="btn-notification-tab" onclick="showTab('notification-tab')">Notifications</button>
+        <button class="tab-button" id="btn-backup-tab" onclick="showTab('backup-tab')">Backup/Restore</button>
     </div>
     
-    <div class="tab-content active" id="general-tab">
+    <div class="tab-content" id="general-tab" style="display: block;">
         <div class="card">
             <h3>System Information</h3>
             <div class="info-grid">
@@ -111,7 +111,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="network-tab">
+    <div class="tab-content" id="network-tab" style="display: none;">
         <div class="card">
             <h3>Network Settings</h3>
             <div class="form-group">
@@ -217,7 +217,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="hardware-tab">
+    <div class="tab-content" id="hardware-tab" style="display: none;">
         <div class="card">
             <h3>Hardware Configuration</h3>
             <div class="hardware-info">
@@ -314,7 +314,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="notification-tab">
+    <div class="tab-content" id="notification-tab" style="display: none;">
         <div class="card">
             <h3>Email Notifications</h3>
             <div class="form-group">
@@ -411,7 +411,7 @@
         </div>
     </div>
     
-    <div class="tab-content" id="backup-tab">
+    <div class="tab-content" id="backup-tab" style="display: none;">
         <div class="card">
             <h3>System Backup</h3>
             <p>Back up your system configuration, sensor history, and custom settings.</p>
@@ -485,32 +485,38 @@
 
 {% block scripts %}
 <script>
-    // Direct tab switching function that doesn't rely on event listeners
-    function switchTab(tabId, buttonElement) {
-        console.log("Switching to tab:", tabId);
+    // Simple direct tab switching function with style manipulation
+    function showTab(tabId) {
+        console.log("showTab called for:", tabId);
         
         // Hide all tab contents
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabContents.forEach(content => {
-            content.classList.remove('active');
+        document.querySelectorAll('.tab-content').forEach(function(tab) {
+            tab.style.display = 'none';
+            console.log("Hiding tab:", tab.id);
         });
         
-        // Show the selected tab content
-        const selectedTab = document.getElementById(tabId);
+        // Show the selected tab
+        var selectedTab = document.getElementById(tabId);
         if (selectedTab) {
-            selectedTab.classList.add('active');
+            selectedTab.style.display = 'block';
+            console.log("Showing tab:", tabId);
         } else {
-            console.error("Tab content not found:", tabId);
+            console.error("Tab not found:", tabId);
         }
         
-        // Update button active state
-        const tabButtons = document.querySelectorAll('.tab-button');
-        tabButtons.forEach(button => {
-            button.classList.remove('active');
+        // Update buttons
+        document.querySelectorAll('.tab-button').forEach(function(btn) {
+            btn.classList.remove('active');
+            console.log("Removing active class from button:", btn.id);
         });
         
-        // Set the clicked button as active
-        buttonElement.classList.add('active');
+        var activeButton = document.getElementById('btn-' + tabId);
+        if (activeButton) {
+            activeButton.classList.add('active');
+            console.log("Added active class to button:", activeButton.id);
+        } else {
+            console.error("Button not found for tab:", tabId);
+        }
     }
 
     // Function to show/hide elements based on checkbox state
@@ -638,8 +644,14 @@
             });
     }
 
-    // Initialize everything when the DOM is loaded
+    // Initialize tabs and everything else when the DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM loaded - initializing page");
+        
+        // Make sure the first tab is shown
+        showTab('general-tab');
+        document.getElementById('btn-general-tab').classList.add('active');
+        
         // Set up toggle visibility
         toggleVisibility('date-time-auto', 'manual-date-time');
         toggleVisibility('ip-auto', 'static-ip-settings');
