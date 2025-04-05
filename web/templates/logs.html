@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - nutetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="logs-container">
+    <div class="card">
+        <h2>Log Viewer</h2>
+        <div class="log-controls">
+            <div class="form-group">
+                <label for="log-type">Log Type</label>
+                <select id="log-type" name="log-type">
+                    <option value="system">System Logs</option>
+                    <option value="sensor">Sensor Logs</option>
+                    <option value="dosing">Dosing Logs</option>
+                    <option value="error">Error Logs</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="log-date">Date</label>
+                <input type="date" id="log-date" name="log-date">
+            </div>
+            <div class="form-group">
+                <label for="log-lines">Lines</label>
+                <select id="log-lines" name="log-lines">
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                </select>
+            </div>
+            <button class="btn primary-btn" id="refresh-logs">Refresh</button>
+            <button class="btn secondary-btn" id="download-logs">Download</button>
+        </div>
+        <div class="log-viewer">
+            <pre id="log-content" class="log-content">Select log type and click Refresh to view logs.</pre>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Sensor History</h2>
+        <div class="sensor-history-controls">
+            <div class="form-group">
+                <label for="sensor-type">Sensor</label>
+                <select id="sensor-type" name="sensor-type">
+                    <option value="ph">pH</option>
+                    <option value="ec">EC</option>
+                    <option value="temp">Temperature</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="time-range">Time Range</label>
+                <select id="time-range" name="time-range">
+                    <option value="1h">Last Hour</option>
+                    <option value="6h">Last 6 Hours</option>
+                    <option value="1d" selected>Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="show-min-max" name="show-min-max" checked>
+                    <label for="show-min-max">Show Min/Max</label>
+                </div>
+            </div>
+            <button class="btn primary-btn" id="refresh-history">Refresh</button>
+            <button class="btn secondary-btn" id="export-csv">Export CSV</button>
+        </div>
+        <div class="sensor-history-chart-container">
+            <canvas id="sensor-history-chart"></canvas>
+        </div>
+        <div class="sensor-stats">
+            <div class="stat-item">
+                <span class="stat-label">Current:</span>
+                <span class="stat-value" id="current-value">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Average:</span>
+                <span class="stat-value" id="avg-value">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Minimum:</span>
+                <span class="stat-value" id="min-value">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Maximum:</span>
+                <span class="stat-value" id="max-value">--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Dosing History</h2>
+        <div class="dosing-history-controls">
+            <div class="form-group">
+                <label for="dosing-date-start">Start Date</label>
+                <input type="date" id="dosing-date-start" name="dosing-date-start">
+            </div>
+            <div class="form-group">
+                <label for="dosing-date-end">End Date</label>
+                <input type="date" id="dosing-date-end" name="dosing-date-end">
+            </div>
+            <div class="form-group">
+                <label for="dosing-type">Type</label>
+                <select id="dosing-type" name="dosing-type">
+                    <option value="all">All</option>
+                    <option value="ph-up">pH Up</option>
+                    <option value="ph-down">pH Down</option>
+                    <option value="nutrient-a">Nutrient A</option>
+                    <option value="nutrient-b">Nutrient B</option>
+                </select>
+            </div>
+            <button class="btn primary-btn" id="refresh-dosing">Refresh</button>
+        </div>
+        <div class="dosing-table-container">
+            <table class="dosing-table" id="dosing-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Type</th>
+                        <th>Amount (ml)</th>
+                        <th>Reading Before</th>
+                        <th>Reading After</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody id="dosing-table-body">
+                    <!-- Dosing history rows will be added here dynamically -->
+                    <tr>
+                        <td colspan="6" class="empty-table">No dosing events found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sensor history chart
+    const sensorHistoryChart = new Chart(
+        document.getElementById('sensor-history-chart').getContext('2d'), 
+        {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Value',
+                    data: [],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'HH:mm',
+                                day: 'MMM d'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        }
+                    }
+                }
+            }
+        }
+    );
+    
+    // Set today's date as default for log viewer
+    document.getElementById('log-date').valueAsDate = new Date();
+    
+    // Set date range for dosing history (last 7 days)
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    
+    document.getElementById('dosing-date-end').valueAsDate = today;
+    document.getElementById('dosing-date-start').valueAsDate = sevenDaysAgo;
+    
+    // Refresh log viewer
+    document.getElementById('refresh-logs').addEventListener('click', function() {
+        const logType = document.getElementById('log-type').value;
+        const logDate = document.getElementById('log-date').value;
+        const logLines = document.getElementById('log-lines').value;
+        
+        fetch(`/api/logs/view?type=${logType}&date=${logDate}&lines=${logLines}`)
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('log-content').textContent = data;
+            })
+            .catch(error => {
+                console.error('Error fetching logs:', error);
+                document.getElementById('log-content').textContent = 'Error loading logs: ' + error.message;
+            });
+    });
+    
+    // Download logs
+    document.getElementById('download-logs').addEventListener('click', function() {
+        const logType = document.getElementById('log-type').value;
+        const logDate = document.getElementById('log-date').value;
+        
+        window.location.href = `/api/logs/download?type=${logType}&date=${logDate}`;
+    });
+    
+    // Refresh sensor history
+    document.getElementById('refresh-history').addEventListener('click', function() {
+        loadSensorHistory();
+    });
+    
+    // Load sensor history data
+    function loadSensorHistory() {
+        const sensorType = document.getElementById('sensor-type').value;
+        const timeRange = document.getElementById('time-range').value;
+        const showMinMax = document.getElementById('show-min-max').checked;
+        
+        fetch(`/api/logs/sensor-history?type=${sensorType}&range=${timeRange}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update chart
+                sensorHistoryChart.data.labels = data.timestamps.map(t => new Date(t));
+                sensorHistoryChart.data.datasets[0].data = data.values;
+                
+                // Update chart label and color based on sensor type
+                if (sensorType === 'ph') {
+                    sensorHistoryChart.data.datasets[0].label = 'pH';
+                    sensorHistoryChart.data.datasets[0].borderColor = '#3498db';
+                    sensorHistoryChart.data.datasets[0].backgroundColor = 'rgba(52, 152, 219, 0.1)';
+                } else if (sensorType === 'ec') {
+                    sensorHistoryChart.data.datasets[0].label = 'EC';
+                    sensorHistoryChart.data.datasets[0].borderColor = '#2ecc71';
+                    sensorHistoryChart.data.datasets[0].backgroundColor = 'rgba(46, 204, 113, 0.1)';
+                } else if (sensorType === 'temp') {
+                    sensorHistoryChart.data.datasets[0].label = 'Temperature';
+                    sensorHistoryChart.data.datasets[0].borderColor = '#e74c3c';
+                    sensorHistoryChart.data.datasets[0].backgroundColor = 'rgba(231, 76, 60, 0.1)';
+                }
+                
+                // Set y-axis title
+                sensorHistoryChart.options.scales.y.title.text = data.unit;
+                
+                // Set x-axis time unit based on time range
+                if (timeRange === '1h' || timeRange === '6h') {
+                    sensorHistoryChart.options.scales.x.time.unit = 'minute';
+                    sensorHistoryChart.options.scales.x.time.displayFormats.minute = 'HH:mm';
+                } else if (timeRange === '1d') {
+                    sensorHistoryChart.options.scales.x.time.unit = 'hour';
+                } else {
+                    sensorHistoryChart.options.scales.x.time.unit = 'day';
+                }
+                
+                // Update chart
+                sensorHistoryChart.update();
+                
+                // Update statistics
+                document.getElementById('current-value').textContent = data.current + ' ' + data.unit;
+                document.getElementById('avg-value').textContent = data.average + ' ' + data.unit;
+                document.getElementById('min-value').textContent = data.minimum + ' ' + data.unit;
+                document.getElementById('max-value').textContent = data.maximum + ' ' + data.unit;
+            })
+            .catch(error => {
+                console.error('Error fetching sensor history:', error);
+            });
+    }
+    
+    // Export sensor data as CSV
+    document.getElementById('export-csv').addEventListener('click', function() {
+        const sensorType = document.getElementById('sensor-type').value;
+        const timeRange = document.getElementById('time-range').value;
+        
+        window.location.href = `/api/logs/sensor-export?type=${sensorType}&range=${timeRange}`;
+    });
+    
+    // Refresh dosing history
+    document.getElementById('refresh-dosing').addEventListener('click', function() {
+        loadDosingHistory();
+    });
+    
+    // Load dosing history
+    function loadDosingHistory() {
+        const startDate = document.getElementById('dosing-date-start').value;
+        const endDate = document.getElementById('dosing-date-end').value;
+        const dosingType = document.getElementById('dosing-type').value;
+        
+        fetch(`/api/logs/dosing-history?start=${startDate}&end=${endDate}&type=${dosingType}`)
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('dosing-table-body');
+                
+                // Clear previous entries
+                tableBody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = '<td colspan="6" class="empty-table">No dosing events found.</td>';
+                    tableBody.appendChild(emptyRow);
+                    return;
+                }
+                
+                // Add new entries
+                data.forEach(dosing => {
+                    const row = document.createElement('tr');
+                    
+                    const timestamp = document.createElement('td');
+                    timestamp.textContent = new Date(dosing.timestamp).toLocaleString();
+                    
+                    const type = document.createElement('td');
+                    type.textContent = dosing.type;
+                    
+                    const amount = document.createElement('td');
+                    amount.textContent = dosing.amount;
+                    
+                    const before = document.createElement('td');
+                    before.textContent = dosing.reading_before;
+                    
+                    const after = document.createElement('td');
+                    after.textContent = dosing.reading_after;
+                    
+                    const reason = document.createElement('td');
+                    reason.textContent = dosing.reason;
+                    
+                    row.appendChild(timestamp);
+                    row.appendChild(type);
+                    row.appendChild(amount);
+                    row.appendChild(before);
+                    row.appendChild(after);
+                    row.appendChild(reason);
+                    
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading dosing history:', error);
+            });
+    }
+    
+    // Initialize with default sensor (pH)
+    loadSensorHistory();
+    loadDosingHistory();
+</script>
+{% endblock %} 

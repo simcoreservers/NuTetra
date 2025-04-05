@@ -1,0 +1,615 @@
+{% extends "base.html" %}
+
+{% block title %}System - nutetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="system-container">
+    <div class="card">
+        <h2>System Information</h2>
+        <div class="system-info">
+            <div class="info-item">
+                <span class="info-label">System Version:</span>
+                <span class="info-value" id="system-version">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Uptime:</span>
+                <span class="info-value" id="system-uptime">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Device ID:</span>
+                <span class="info-value" id="device-id">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">IP Address:</span>
+                <span class="info-value" id="ip-address">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">CPU Temperature:</span>
+                <span class="info-value" id="cpu-temp">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Disk Usage:</span>
+                <span class="info-value" id="disk-usage">--</span>
+            </div>
+            <div class="button-group">
+                <button class="btn primary-btn" id="refresh-sysinfo">Refresh</button>
+                <button class="btn secondary-btn" id="restart-service">Restart Service</button>
+                <button class="btn danger-btn" id="reboot-system">Reboot System</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Network Settings</h2>
+        <div class="settings-form">
+            <div class="form-section">
+                <h3>Device Network</h3>
+                <div class="form-group">
+                    <label for="hostname">Hostname</label>
+                    <input type="text" id="hostname" name="hostname" placeholder="nutetra">
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-wifi" name="enable-wifi" checked>
+                        <label for="enable-wifi">Enable WiFi</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="wifi-ssid">WiFi SSID</label>
+                    <input type="text" id="wifi-ssid" name="wifi-ssid">
+                </div>
+                <div class="form-group">
+                    <label for="wifi-password">WiFi Password</label>
+                    <input type="password" id="wifi-password" name="wifi-password">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Access Point</h3>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-ap" name="enable-ap">
+                        <label for="enable-ap">Enable Access Point</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ap-ssid">AP SSID</label>
+                    <input type="text" id="ap-ssid" name="ap-ssid" placeholder="NuTetra">
+                </div>
+                <div class="form-group">
+                    <label for="ap-password">AP Password</label>
+                    <input type="password" id="ap-password" name="ap-password">
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn primary-btn" id="save-network">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>System Maintenance</h2>
+        <div class="maintenance-options">
+            <div class="maintenance-section">
+                <h3>Backup & Restore</h3>
+                <p>Create or restore a backup of your system configuration and data.</p>
+                <div class="button-group">
+                    <button class="btn primary-btn" id="create-backup">Create Backup</button>
+                    <label for="restore-file" class="btn secondary-btn">Select Backup File</label>
+                    <input type="file" id="restore-file" name="restore-file" style="display: none;">
+                    <button class="btn secondary-btn" id="restore-backup" disabled>Restore</button>
+                </div>
+                <div id="backup-status" class="status-message"></div>
+            </div>
+
+            <div class="maintenance-section">
+                <h3>Software Update</h3>
+                <p>Check for and install software updates for your nutetra system.</p>
+                <div id="update-info">
+                    <div class="info-item">
+                        <span class="info-label">Current Version:</span>
+                        <span class="info-value" id="current-version">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Latest Version:</span>
+                        <span class="info-value" id="latest-version">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Update Available:</span>
+                        <span class="info-value" id="update-available">--</span>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn primary-btn" id="check-updates">Check for Updates</button>
+                    <button class="btn secondary-btn" id="install-update" disabled>Install Update</button>
+                </div>
+                <div id="update-status" class="status-message"></div>
+            </div>
+
+            <div class="maintenance-section">
+                <h3>Data Management</h3>
+                <p>Manage system data and perform cleanup operations.</p>
+                <div class="button-group">
+                    <button class="btn secondary-btn" id="clear-logs">Clear Log Files</button>
+                    <button class="btn secondary-btn" id="clear-history">Clear Sensor History</button>
+                    <button class="btn danger-btn" id="factory-reset">Factory Reset</button>
+                </div>
+                <div id="data-status" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Display Settings</h2>
+        <div class="settings-form">
+            <div class="form-section">
+                <h3>User Interface</h3>
+                <div class="form-group">
+                    <label for="theme">Theme</label>
+                    <select id="theme" name="theme">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="temperature-unit">Temperature Unit</label>
+                    <select id="temperature-unit" name="temperature-unit">
+                        <option value="celsius">Celsius (°C)</option>
+                        <option value="fahrenheit">Fahrenheit (°F)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="volume-unit">Volume Unit</label>
+                    <select id="volume-unit" name="volume-unit">
+                        <option value="ml">Milliliters (ml)</option>
+                        <option value="oz">Fluid Ounces (oz)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="brightness">Display Brightness</label>
+                    <input type="range" id="brightness" name="brightness" min="10" max="100" value="80">
+                    <span class="range-value" id="brightness-value">80%</span>
+                </div>
+                <div class="form-group">
+                    <label for="screensaver">Screensaver Timeout (seconds)</label>
+                    <input type="number" id="screensaver" name="screensaver" min="0" max="3600" value="300">
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn primary-btn" id="save-display">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load system information
+    function loadSystemInfo() {
+        fetch('/api/system/info')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('system-version').textContent = data.version;
+                document.getElementById('system-uptime').textContent = data.uptime;
+                document.getElementById('device-id').textContent = data.device_id;
+                document.getElementById('ip-address').textContent = data.ip_address;
+                document.getElementById('cpu-temp').textContent = data.cpu_temp;
+                document.getElementById('disk-usage').textContent = data.disk_usage;
+            })
+            .catch(error => {
+                console.error('Error loading system info:', error);
+            });
+    }
+
+    // Load network settings
+    function loadNetworkSettings() {
+        fetch('/api/system/network')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('hostname').value = data.hostname;
+                document.getElementById('enable-wifi').checked = data.wifi.enabled;
+                document.getElementById('wifi-ssid').value = data.wifi.ssid;
+                document.getElementById('wifi-password').value = ''; // Don't load password for security
+                
+                document.getElementById('enable-ap').checked = data.ap.enabled;
+                document.getElementById('ap-ssid').value = data.ap.ssid;
+                document.getElementById('ap-password').value = ''; // Don't load password for security
+            })
+            .catch(error => {
+                console.error('Error loading network settings:', error);
+            });
+    }
+
+    // Load display settings
+    function loadDisplaySettings() {
+        fetch('/api/system/display')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('theme').value = data.theme;
+                document.getElementById('temperature-unit').value = data.units.temperature;
+                document.getElementById('volume-unit').value = data.units.volume;
+                document.getElementById('brightness').value = data.brightness;
+                document.getElementById('brightness-value').textContent = data.brightness + '%';
+                document.getElementById('screensaver').value = data.screensaver_timeout;
+            })
+            .catch(error => {
+                console.error('Error loading display settings:', error);
+            });
+    }
+
+    // Load update information
+    function checkForUpdates() {
+        document.getElementById('update-status').textContent = 'Checking for updates...';
+        document.getElementById('update-status').className = 'status-message info';
+        
+        fetch('/api/system/check-updates')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('current-version').textContent = data.current_version;
+                document.getElementById('latest-version').textContent = data.latest_version;
+                
+                if (data.update_available) {
+                    document.getElementById('update-available').textContent = 'Yes - ' + data.update_notes;
+                    document.getElementById('update-available').style.color = 'var(--success-color)';
+                    document.getElementById('install-update').disabled = false;
+                    document.getElementById('update-status').textContent = 'Update available!';
+                    document.getElementById('update-status').className = 'status-message success';
+                } else {
+                    document.getElementById('update-available').textContent = 'No - System is up to date';
+                    document.getElementById('update-available').style.color = 'var(--muted-text)';
+                    document.getElementById('install-update').disabled = true;
+                    document.getElementById('update-status').textContent = 'System is up to date.';
+                    document.getElementById('update-status').className = 'status-message info';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking for updates:', error);
+                document.getElementById('update-status').textContent = 'Error checking for updates: ' + error.message;
+                document.getElementById('update-status').className = 'status-message error';
+            });
+    }
+
+    // Handle file selection for backup restore
+    document.getElementById('restore-file').addEventListener('change', function(event) {
+        const fileInput = event.target;
+        if (fileInput.files.length > 0) {
+            document.getElementById('restore-backup').disabled = false;
+        } else {
+            document.getElementById('restore-backup').disabled = true;
+        }
+    });
+
+    // Save network settings
+    document.getElementById('save-network').addEventListener('click', function() {
+        const networkSettings = {
+            hostname: document.getElementById('hostname').value,
+            wifi: {
+                enabled: document.getElementById('enable-wifi').checked,
+                ssid: document.getElementById('wifi-ssid').value,
+                password: document.getElementById('wifi-password').value
+            },
+            ap: {
+                enabled: document.getElementById('enable-ap').checked,
+                ssid: document.getElementById('ap-ssid').value,
+                password: document.getElementById('ap-password').value
+            }
+        };
+        
+        fetch('/api/system/network', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(networkSettings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Network settings saved. Changes may require a system restart.');
+            } else {
+                alert('Error saving network settings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving network settings:', error);
+            alert('Error saving network settings');
+        });
+    });
+
+    // Save display settings
+    document.getElementById('save-display').addEventListener('click', function() {
+        const displaySettings = {
+            theme: document.getElementById('theme').value,
+            units: {
+                temperature: document.getElementById('temperature-unit').value,
+                volume: document.getElementById('volume-unit').value
+            },
+            brightness: parseInt(document.getElementById('brightness').value),
+            screensaver_timeout: parseInt(document.getElementById('screensaver').value)
+        };
+        
+        fetch('/api/system/display', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(displaySettings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Display settings saved.');
+                
+                // Update theme immediately if it was changed
+                if (displaySettings.theme !== document.documentElement.getAttribute('data-theme')) {
+                    document.documentElement.setAttribute('data-theme', displaySettings.theme);
+                }
+            } else {
+                alert('Error saving display settings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving display settings:', error);
+            alert('Error saving display settings');
+        });
+    });
+
+    // Create backup
+    document.getElementById('create-backup').addEventListener('click', function() {
+        document.getElementById('backup-status').textContent = 'Creating backup...';
+        document.getElementById('backup-status').className = 'status-message info';
+        
+        fetch('/api/system/backup/create', {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            throw new Error('Network response was not ok');
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'nutetra-backup-' + new Date().toISOString().slice(0, 10) + '.zip';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            document.getElementById('backup-status').textContent = 'Backup created successfully!';
+            document.getElementById('backup-status').className = 'status-message success';
+        })
+        .catch(error => {
+            console.error('Error creating backup:', error);
+            document.getElementById('backup-status').textContent = 'Error creating backup: ' + error.message;
+            document.getElementById('backup-status').className = 'status-message error';
+        });
+    });
+
+    // Restore backup
+    document.getElementById('restore-backup').addEventListener('click', function() {
+        const fileInput = document.getElementById('restore-file');
+        if (fileInput.files.length === 0) {
+            alert('Please select a backup file first.');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to restore this backup? This will overwrite your current configuration.')) {
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('backup_file', fileInput.files[0]);
+        
+        document.getElementById('backup-status').textContent = 'Restoring backup...';
+        document.getElementById('backup-status').className = 'status-message info';
+        
+        fetch('/api/system/backup/restore', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('backup-status').textContent = 'Backup restored successfully! System will restart.';
+                document.getElementById('backup-status').className = 'status-message success';
+                
+                // Reload page after a delay to reflect restored settings
+                setTimeout(() => window.location.reload(), 5000);
+            } else {
+                document.getElementById('backup-status').textContent = 'Error restoring backup: ' + data.message;
+                document.getElementById('backup-status').className = 'status-message error';
+            }
+        })
+        .catch(error => {
+            console.error('Error restoring backup:', error);
+            document.getElementById('backup-status').textContent = 'Error restoring backup: ' + error.message;
+            document.getElementById('backup-status').className = 'status-message error';
+        });
+    });
+
+    // Install update
+    document.getElementById('install-update').addEventListener('click', function() {
+        if (!confirm('Are you sure you want to install the update? The system will restart during this process.')) {
+            return;
+        }
+        
+        document.getElementById('update-status').textContent = 'Installing update...';
+        document.getElementById('update-status').className = 'status-message info';
+        
+        fetch('/api/system/install-update', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('update-status').textContent = 'Update installed successfully! System is restarting...';
+                document.getElementById('update-status').className = 'status-message success';
+                
+                // Disable buttons during update
+                document.getElementById('check-updates').disabled = true;
+                document.getElementById('install-update').disabled = true;
+                
+                // Reload page after a delay
+                setTimeout(() => window.location.reload(), 30000);
+            } else {
+                document.getElementById('update-status').textContent = 'Error installing update: ' + data.message;
+                document.getElementById('update-status').className = 'status-message error';
+            }
+        })
+        .catch(error => {
+            console.error('Error installing update:', error);
+            document.getElementById('update-status').textContent = 'Error installing update: ' + error.message;
+            document.getElementById('update-status').className = 'status-message error';
+        });
+    });
+
+    // Service restart
+    document.getElementById('restart-service').addEventListener('click', function() {
+        if (!confirm('Are you sure you want to restart the nutetra service?')) {
+            return;
+        }
+        
+        fetch('/api/system/restart-service', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Service restart command sent successfully. The page will reload shortly.');
+                setTimeout(() => window.location.reload(), 5000);
+            } else {
+                alert('Error restarting service: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error restarting service:', error);
+            alert('Error restarting service');
+        });
+    });
+
+    // System reboot
+    document.getElementById('reboot-system').addEventListener('click', function() {
+        if (!confirm('Are you sure you want to reboot the system?')) {
+            return;
+        }
+        
+        fetch('/api/system/reboot', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('System reboot command sent successfully. Please wait for the system to restart.');
+                // Show countdown or message about system being unavailable
+            } else {
+                alert('Error rebooting system: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error rebooting system:', error);
+            alert('Error rebooting system');
+        });
+    });
+
+    // Clear logs
+    document.getElementById('clear-logs').addEventListener('click', function() {
+        if (!confirm('Are you sure you want to clear all log files?')) {
+            return;
+        }
+        
+        fetch('/api/system/clear-logs', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('data-status').textContent = 'Log files cleared successfully.';
+                document.getElementById('data-status').className = 'status-message success';
+            } else {
+                document.getElementById('data-status').textContent = 'Error clearing logs: ' + data.message;
+                document.getElementById('data-status').className = 'status-message error';
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing logs:', error);
+            document.getElementById('data-status').textContent = 'Error clearing logs: ' + error.message;
+            document.getElementById('data-status').className = 'status-message error';
+        });
+    });
+
+    // Clear sensor history
+    document.getElementById('clear-history').addEventListener('click', function() {
+        if (!confirm('Are you sure you want to clear all sensor history data?')) {
+            return;
+        }
+        
+        fetch('/api/system/clear-history', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('data-status').textContent = 'Sensor history cleared successfully.';
+                document.getElementById('data-status').className = 'status-message success';
+            } else {
+                document.getElementById('data-status').textContent = 'Error clearing sensor history: ' + data.message;
+                document.getElementById('data-status').className = 'status-message error';
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing sensor history:', error);
+            document.getElementById('data-status').textContent = 'Error clearing sensor history: ' + error.message;
+            document.getElementById('data-status').className = 'status-message error';
+        });
+    });
+
+    // Factory reset
+    document.getElementById('factory-reset').addEventListener('click', function() {
+        if (!confirm('WARNING: This will reset all settings to factory defaults and erase all data. This cannot be undone. Are you sure you want to continue?')) {
+            return;
+        }
+        
+        if (!confirm('FINAL WARNING: All data will be lost. Are you absolutely sure?')) {
+            return;
+        }
+        
+        fetch('/api/system/factory-reset', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Factory reset initiated. The system will restart with default settings.');
+                // Redirect to a "resetting" page or show countdown
+            } else {
+                alert('Error performing factory reset: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error performing factory reset:', error);
+            alert('Error performing factory reset');
+        });
+    });
+
+    // Update brightness value display
+    document.getElementById('brightness').addEventListener('input', function() {
+        document.getElementById('brightness-value').textContent = this.value + '%';
+    });
+
+    // Refresh system info when button clicked
+    document.getElementById('refresh-sysinfo').addEventListener('click', loadSystemInfo);
+    
+    // Check for updates when button clicked
+    document.getElementById('check-updates').addEventListener('click', checkForUpdates);
+    
+    // Initialize
+    loadSystemInfo();
+    loadNetworkSettings();
+    loadDisplaySettings();
+    checkForUpdates();
+</script>
+{% endblock %} 

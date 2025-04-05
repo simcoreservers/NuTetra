@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts - nutetra Hydroponic System{% endblock %}
+
+{% block content %}
+<div class="alerts-container">
+    <div class="card">
+        <h2>Alert Notifications</h2>
+        <div class="settings-form">
+            <div class="form-section">
+                <h3>Email Notifications</h3>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="email-enabled" name="email-enabled">
+                        <label for="email-enabled">Enable Email Notifications</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email-recipient">Email Recipient</label>
+                    <input type="text" id="email-recipient" name="email-recipient" placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="smtp-server">SMTP Server</label>
+                    <input type="text" id="smtp-server" name="smtp-server" placeholder="smtp.example.com">
+                </div>
+                <div class="form-group">
+                    <label for="smtp-port">SMTP Port</label>
+                    <input type="text" id="smtp-port" name="smtp-port" placeholder="587">
+                </div>
+                <div class="form-group">
+                    <label for="smtp-user">SMTP Username</label>
+                    <input type="text" id="smtp-user" name="smtp-user" placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="smtp-password">SMTP Password</label>
+                    <input type="password" id="smtp-password" name="smtp-password" placeholder="********">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Alert Thresholds</h3>
+                <div class="form-group">
+                    <label for="ph-min">pH Minimum</label>
+                    <input type="text" id="ph-min" name="ph-min" placeholder="5.5">
+                </div>
+                <div class="form-group">
+                    <label for="ph-max">pH Maximum</label>
+                    <input type="text" id="ph-max" name="ph-max" placeholder="6.5">
+                </div>
+                <div class="form-group">
+                    <label for="ec-min">EC Minimum</label>
+                    <input type="text" id="ec-min" name="ec-min" placeholder="1.0">
+                </div>
+                <div class="form-group">
+                    <label for="ec-max">EC Maximum</label>
+                    <input type="text" id="ec-max" name="ec-max" placeholder="2.0">
+                </div>
+                <div class="form-group">
+                    <label for="temp-min">Temperature Minimum</label>
+                    <input type="text" id="temp-min" name="temp-min" placeholder="18">
+                </div>
+                <div class="form-group">
+                    <label for="temp-max">Temperature Maximum</label>
+                    <input type="text" id="temp-max" name="temp-max" placeholder="24">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Notification Settings</h3>
+                <div class="form-group">
+                    <label for="notification-interval">Notification Interval (seconds)</label>
+                    <input type="text" id="notification-interval" name="notification-interval" placeholder="3600">
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="notify-ph" name="notify-ph" checked>
+                        <label for="notify-ph">Notify on pH alerts</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="notify-ec" name="notify-ec" checked>
+                        <label for="notify-ec">Notify on EC alerts</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="notify-temp" name="notify-temp" checked>
+                        <label for="notify-temp">Notify on Temperature alerts</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="notify-dosing" name="notify-dosing" checked>
+                        <label for="notify-dosing">Notify on Dosing events</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="notify-system" name="notify-system" checked>
+                        <label for="notify-system">Notify on System events</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn primary-btn" id="save-alerts">Save Settings</button>
+                <button class="btn secondary-btn" id="test-alerts">Test Notification</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Alert History</h2>
+        <div class="alert-history" id="alert-history">
+            <div class="status-message" id="alert-history-empty">
+                No alerts found in history.
+            </div>
+            <!-- Alert history items will be added here dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load alert settings from server
+    function loadAlertSettings() {
+        fetch('/api/alerts/settings')
+            .then(response => response.json())
+            .then(data => {
+                // Populate form fields with data
+                document.getElementById('email-enabled').checked = data.email.enabled;
+                document.getElementById('email-recipient').value = data.email.recipient;
+                document.getElementById('smtp-server').value = data.email.smtp_server;
+                document.getElementById('smtp-port').value = data.email.smtp_port;
+                document.getElementById('smtp-user').value = data.email.smtp_user;
+                document.getElementById('smtp-password').value = data.email.smtp_password;
+                
+                document.getElementById('ph-min').value = data.thresholds.ph_min;
+                document.getElementById('ph-max').value = data.thresholds.ph_max;
+                document.getElementById('ec-min').value = data.thresholds.ec_min;
+                document.getElementById('ec-max').value = data.thresholds.ec_max;
+                document.getElementById('temp-min').value = data.thresholds.temp_min;
+                document.getElementById('temp-max').value = data.thresholds.temp_max;
+                
+                document.getElementById('notification-interval').value = data.notification_interval;
+                document.getElementById('notify-ph').checked = data.notifications.ph;
+                document.getElementById('notify-ec').checked = data.notifications.ec;
+                document.getElementById('notify-temp').checked = data.notifications.temp;
+                document.getElementById('notify-dosing').checked = data.notifications.dosing;
+                document.getElementById('notify-system').checked = data.notifications.system;
+            })
+            .catch(error => {
+                console.error('Error loading alert settings:', error);
+            });
+    }
+
+    // Save alert settings
+    document.getElementById('save-alerts').addEventListener('click', function() {
+        const settings = {
+            email: {
+                enabled: document.getElementById('email-enabled').checked,
+                recipient: document.getElementById('email-recipient').value,
+                smtp_server: document.getElementById('smtp-server').value,
+                smtp_port: document.getElementById('smtp-port').value,
+                smtp_user: document.getElementById('smtp-user').value,
+                smtp_password: document.getElementById('smtp-password').value
+            },
+            thresholds: {
+                ph_min: parseFloat(document.getElementById('ph-min').value),
+                ph_max: parseFloat(document.getElementById('ph-max').value),
+                ec_min: parseFloat(document.getElementById('ec-min').value),
+                ec_max: parseFloat(document.getElementById('ec-max').value),
+                temp_min: parseFloat(document.getElementById('temp-min').value),
+                temp_max: parseFloat(document.getElementById('temp-max').value)
+            },
+            notification_interval: parseInt(document.getElementById('notification-interval').value),
+            notifications: {
+                ph: document.getElementById('notify-ph').checked,
+                ec: document.getElementById('notify-ec').checked,
+                temp: document.getElementById('notify-temp').checked,
+                dosing: document.getElementById('notify-dosing').checked,
+                system: document.getElementById('notify-system').checked
+            }
+        };
+
+        fetch('/api/alerts/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Alert settings saved successfully');
+            } else {
+                alert('Error saving settings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving settings:', error);
+            alert('Error saving settings');
+        });
+    });
+
+    // Test alert notification
+    document.getElementById('test-alerts').addEventListener('click', function() {
+        fetch('/api/alerts/test', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Test notification sent successfully');
+            } else {
+                alert('Error sending test: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error sending test notification:', error);
+            alert('Error sending test notification');
+        });
+    });
+
+    // Load alert history
+    function loadAlertHistory() {
+        fetch('/api/alerts/history')
+            .then(response => response.json())
+            .then(data => {
+                const historyContainer = document.getElementById('alert-history');
+                const emptyMessage = document.getElementById('alert-history-empty');
+                
+                if (data.length === 0) {
+                    emptyMessage.style.display = 'block';
+                    return;
+                }
+                
+                emptyMessage.style.display = 'none';
+                
+                // Clear previous entries
+                const existingEntries = historyContainer.querySelectorAll('.alert-entry');
+                existingEntries.forEach(entry => entry.remove());
+                
+                // Add new entries
+                data.forEach(alert => {
+                    const alertEntry = document.createElement('div');
+                    alertEntry.className = `alert-entry ${alert.level}`;
+                    
+                    const timestamp = document.createElement('div');
+                    timestamp.className = 'alert-timestamp';
+                    timestamp.textContent = new Date(alert.timestamp).toLocaleString();
+                    
+                    const message = document.createElement('div');
+                    message.className = 'alert-message';
+                    message.textContent = alert.message;
+                    
+                    alertEntry.appendChild(timestamp);
+                    alertEntry.appendChild(message);
+                    historyContainer.appendChild(alertEntry);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading alert history:', error);
+            });
+    }
+
+    // Socket.IO event listener for real-time alerts
+    socket.on('new_alert', function(alert) {
+        loadAlertHistory();
+    });
+
+    // Initialize
+    loadAlertSettings();
+    loadAlertHistory();
+</script>
+{% endblock %} 
