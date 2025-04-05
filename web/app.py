@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NuTetra Hydroponic System - Web Interface
+nutetra Hydroponic System - Web Interface
 Flask application that serves the web interface for monitoring and controlling the hydroponic system.
 """
 import os
@@ -287,6 +287,6 @@ def start_sensor_updates():
     socketio.start_background_task(sensor_update_task)
 
 if __name__ == '__main__':
-    logger.info("Starting NuTetra Web Interface")
+    logger.info("Starting nutetra Web Interface")
     # In production, you'd use a proper WSGI server
     socketio.run(app, host='0.0.0.0', port=5000, debug=True) 

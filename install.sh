@@ -1,6 +1,6 @@
 #!/bin/bash
-# NuTetra Hydroponic System Installation Script
-# This script installs and configures the NuTetra web application to start automatically on boot
+# nutetra Hydroponic System Installation Script
+# This script installs and configures the nutetra web application to start automatically on boot
 
 set -e # Exit on error
 
@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}=======================================${NC}"
-echo -e "${GREEN}NuTetra Hydroponic System Installation${NC}"
+echo -e "${GREEN}nutetra Hydroponic System Installation${NC}"
 echo -e "${GREEN}=======================================${NC}"
 
 # Ensure script is run as root
@@ -69,10 +69,10 @@ create_directories() {
 create_systemd_service() {
   log "Creating systemd service..."
   
-  # Create NuTetra service file
+  # Create nutetra service file
   cat > /etc/systemd/system/nutetra.service << EOF
 [Unit]
-Description=NuTetra Hydroponic System
+Description=nutetra Hydroponic System
 After=network.target
 
 [Service]
@@ -106,7 +106,7 @@ setup_kiosk_mode() {
   cat > /home/$SUDO_USER/.config/autostart/nutetra-kiosk.desktop << EOF
 [Desktop Entry]
 Type=Application
-Name=NuTetra Kiosk
+Name=nutetra Kiosk
 Exec=chromium-browser --kiosk --incognito --noerrdialogs --disable-translate --no-first-run --fast --fast-start --disable-infobars --disable-features=TranslateUI --disk-cache-dir=/dev/null http://localhost:5000
 X-GNOME-Autostart-enabled=true
 EOF
@@ -120,7 +120,7 @@ EOF
 # Main installation process
 main() {
   echo -e "${YELLOW}Starting installation...${NC}"
-  log "Beginning NuTetra installation"
+  log "Beginning nutetra installation"
   
   # Install dependencies
   install_dependencies
@@ -139,11 +139,11 @@ main() {
   fi
   
   # Start the service
-  echo -e "${YELLOW}Starting NuTetra service...${NC}"
+  echo -e "${YELLOW}Starting nutetra service...${NC}"
   systemctl start nutetra.service
   
   echo -e "${GREEN}Installation completed successfully!${NC}"
-  echo -e "${GREEN}NuTetra is running at: http://localhost:5000${NC}"
+  echo -e "${GREEN}nutetra is running at: http://localhost:5000${NC}"
   log "Installation completed successfully"
 }
 

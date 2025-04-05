@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NuTetra Hydroponic System - Web Interface Launcher
+nutetra Hydroponic System - Web Interface Launcher
 Script to start the web interface and configure it to run on boot.
 """
 import os
@@ -70,11 +70,11 @@ def setup_autostart(chromium_kiosk=False):
         systemd_dir = os.path.expanduser("~/.config/systemd/user")
         os.makedirs(systemd_dir, exist_ok=True)
         
-        # Create systemd service file for NuTetra web app
+        # Create systemd service file for nutetra web app
         service_file = os.path.join(systemd_dir, "nutetra-web.service")
         with open(service_file, "w") as f:
             f.write(f"""[Unit]
-Description=NuTetra Hydroponic System Web Interface
+Description=nutetra Hydroponic System Web Interface
 After=network.target
 
 [Service]
@@ -94,7 +94,7 @@ WantedBy=default.target
             chromium_service = os.path.join(systemd_dir, "nutetra-chromium.service")
             with open(chromium_service, "w") as f:
                 f.write("""[Unit]
-Description=NuTetra Chromium Kiosk
+Description=nutetra Chromium Kiosk
 After=nutetra-web.service
 Requires=nutetra-web.service
 
@@ -115,9 +115,9 @@ WantedBy=graphical.target
             subprocess.run(["systemctl", "--user", "enable", "nutetra-chromium.service"])
             logger.info("Chromium kiosk mode service has been configured to start on boot.")
         
-        # Enable NuTetra web service
+        # Enable nutetra web service
         subprocess.run(["systemctl", "--user", "enable", "nutetra-web.service"])
-        logger.info("NuTetra web service has been configured to start on boot.")
+        logger.info("nutetra web service has been configured to start on boot.")
         
         return True
     
@@ -126,7 +126,7 @@ WantedBy=graphical.target
         return False
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="NuTetra Hydroponic System Web Interface Launcher")
+    parser = argparse.ArgumentParser(description="nutetra Hydroponic System Web Interface Launcher")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind the web server to")
     parser.add_argument("--port", type=int, default=5000, help="Port to run the web server on")
     parser.add_argument("--debug", action="store_true", help="Run in debug mode")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-NuTetra Hydroponic System - Main Runner
-Simple script to run the NuTetra web application directly.
+nutetra Hydroponic System - Main Runner
+Simple script to run the nutetra web application directly.
 """
 import os
 import sys
@@ -25,7 +25,7 @@ def check_python_version():
     return True
 
 def run_nutetra(host='0.0.0.0', port=5000, debug=False):
-    """Run the NuTetra web application."""
+    """Run the nutetra web application."""
     try:
         # Try to import Flask to check if dependencies are installed
         import flask
@@ -37,7 +37,7 @@ def run_nutetra(host='0.0.0.0', port=5000, debug=False):
         # Run the application
         from web.app import socketio, app
         
-        logger.info(f"Starting NuTetra on http://{host}:{port}")
+        logger.info(f"Starting nutetra on http://{host}:{port}")
         socketio.run(app, host=host, port=port, debug=debug)
         
     except ImportError:
@@ -46,14 +46,14 @@ def run_nutetra(host='0.0.0.0', port=5000, debug=False):
         logger.info("pip install -r requirements.txt")
         return False
     except Exception as e:
-        logger.error(f"Error starting NuTetra: {e}")
+        logger.error(f"Error starting nutetra: {e}")
         return False
     
     return True
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="NuTetra Hydroponic System")
+    parser = argparse.ArgumentParser(description="nutetra Hydroponic System")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind the web server to")
     parser.add_argument("--port", type=int, default=5000, help="Port to run the web server on")
     parser.add_argument("--debug", action="store_true", help="Run in debug mode")

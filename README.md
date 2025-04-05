@@ -1,8 +1,8 @@
-# NuTetra Hydroponic Automation System
+# nutetra Hydroponic Automation System
 
-The NuTetra Hydroponic Automation System is a web-based application designed to monitor and control hydroponic systems. It provides real-time monitoring of pH, EC, temperature, and automated dosing to maintain optimal growing conditions.
+The nutetra Hydroponic Automation System is a web-based application designed to monitor and control hydroponic systems. It provides real-time monitoring of pH, EC, temperature, and automated dosing to maintain optimal growing conditions.
 
-![NuTetra Dashboard](web/static/img/dashboard-preview.png)
+![nutetra Dashboard](web/static/img/dashboard-preview.png)
 
 ## Features
 
@@ -28,8 +28,8 @@ The NuTetra Hydroponic Automation System is a web-based application designed to 
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/NuTetra.git
-   cd NuTetra
+   git clone https://github.com/yourusername/nutetra.git
+   cd nutetra
    ```
 
 2. Run the installation script:
