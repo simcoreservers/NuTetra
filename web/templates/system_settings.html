@@ -14,12 +14,6 @@
         <button class="tab-button" onclick="openTab(event, 'backup-tab')">Backup/Restore</button>
     </div>
     
-    <!-- Debug Tools -->
-    <div style="position: absolute; right: 10px; top: 60px; z-index: 1000; border: 1px solid #ccc; padding: 5px; background: white;">
-        <button onclick="debugTab()">Debug Tabs</button>
-        <button onclick="forceGeneralTab()">Force General Tab</button>
-    </div>
-    
     <div id="general-tab" class="tabcontent" style="display: none !important;">
         <div class="card">
             <h3>System Information</h3>
@@ -518,31 +512,6 @@ function openTab(evt, tabName) {
     }
 }
 
-// Debug function to check tab visibility
-function debugTab() {
-    var tabs = document.getElementsByClassName("tabcontent");
-    console.clear();
-    console.log("--- TAB VISIBILITY DEBUG ---");
-    for (var i = 0; i < tabs.length; i++) {
-        var tab = tabs[i];
-        var computedStyle = window.getComputedStyle(tab);
-        console.log("Tab ID:", tab.id);
-        console.log("  - style attribute:", tab.getAttribute("style"));
-        console.log("  - computed display:", computedStyle.display);
-        console.log("  - offsetHeight:", tab.offsetHeight);
-        console.log("  - visibility:", computedStyle.visibility);
-        console.log("---------------------");
-    }
-}
-
-// Force general tab to appear
-function forceGeneralTab() {
-    var generalTab = document.getElementById("general-tab");
-    generalTab.style = "";
-    generalTab.setAttribute("style", "display: block !important; border: 3px solid red !important;");
-    console.log("Forced general tab visibility");
-}
-
 // Initialize tabs when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded - initializing tabs");
@@ -558,9 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         document.getElementById("defaultOpen").click();
         console.log("Default tab clicked");
-        
-        // Debug tab visibility
-        setTimeout(debugTab, 100);
     }, 100);
 });
 </script>
