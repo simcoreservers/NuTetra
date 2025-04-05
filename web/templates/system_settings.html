@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}System Settings - nutetra Hydroponic System{% endblock %}
+{% block title %}System Settings - NuTetra Hydroponic System{% endblock %}
 
 {% block content %}
 <div class="settings-container">
@@ -529,39 +529,61 @@
         }
     }
     
-    // Set up tab navigation
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const target = this.getAttribute('data-target');
-            
-            // Set active button
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Show target content
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                if (content.id === target) {
-                    content.classList.add('active');
-                }
+    // Set up tab navigation - wrap in DOMContentLoaded to ensure DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM loaded, setting up tabs");
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        console.log("Found tab buttons:", tabButtons.length);
+        console.log("Found tab contents:", tabContents.length);
+        
+        // List all tab buttons and their targets for debugging
+        tabButtons.forEach(btn => {
+            console.log("Tab button:", btn.textContent.trim(), "Target:", btn.getAttribute('data-target'));
+        });
+        
+        // List all tab contents and their IDs for debugging
+        tabContents.forEach(content => {
+            console.log("Tab content ID:", content.id);
+        });
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const target = this.getAttribute('data-target');
+                console.log("Tab clicked:", this.textContent.trim(), "Target:", target);
+                
+                // Set active button
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show target content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === target) {
+                        console.log("Activating content:", content.id);
+                        content.classList.add('active');
+                    }
+                });
             });
         });
+        
+        console.log("Tab setup complete");
     });
     
-    // Set up toggle visibility
-    toggleVisibility('date-time-auto', 'manual-date-time');
-    toggleVisibility('ip-auto', 'static-ip-settings');
-    toggleVisibility('enable-auth', 'auth-settings', true);
-    toggleVisibility('enable-email', 'email-settings', true);
-    toggleVisibility('enable-push', 'push-settings', true);
-    
-    // Set up radio toggle
-    setupRadioToggle('push-service', {
-        'pushover': 'pushover-settings',
-        'telegram': 'telegram-settings'
+    // Set up toggle visibility (move inside DOMContentLoaded)
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleVisibility('date-time-auto', 'manual-date-time');
+        toggleVisibility('ip-auto', 'static-ip-settings');
+        toggleVisibility('enable-auth', 'auth-settings', true);
+        toggleVisibility('enable-email', 'email-settings', true);
+        toggleVisibility('enable-push', 'push-settings', true);
+        
+        // Set up radio toggle
+        setupRadioToggle('push-service', {
+            'pushover': 'pushover-settings',
+            'telegram': 'telegram-settings'
+        });
     });
     
     // Function to show status message
@@ -609,102 +631,17 @@
         }
     }
     
-    // Set up confirmation handlers
-    setupConfirmation('system-restart', 'Restart System', 
-        'Are you sure you want to restart all nutetra services?', 
-        function() {
-            // Send restart services request
-            fetch('/api/system/restart', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatusMessage('System services restarting...', 'success');
-                    } else {
-                        showStatusMessage(`Error: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
-                });
-        }
-    );
-    
-    setupConfirmation('system-reboot', 'Reboot Device', 
-        'Are you sure you want to reboot the Raspberry Pi? This will disconnect your session.',
-        function() {
-            // Send reboot request
-            fetch('/api/system/reboot', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatusMessage('Device is rebooting. Please wait...', 'success');
-                        
-                        // Show countdown to reconnect
-                        setTimeout(() => {
-                            document.body.innerHTML = '<div class="reboot-message">' +
-                                '<h2>Device is rebooting</h2>' +
-                                '<p>Please wait while the system restarts.</p>' +
-                                '<p>This page will attempt to reconnect in <span id="countdown">60</span> seconds.</p>' +
-                                '</div>';
-                            
-                            let countdown = 60;
-                            const countdownElement = document.getElementById('countdown');
-                            
-                            const interval = setInterval(() => {
-                                countdown--;
-                                countdownElement.textContent = countdown;
-                                
-                                if (countdown <= 0) {
-                                    clearInterval(interval);
-                                    window.location.reload();
-                                }
-                            }, 1000);
-                        }, 2000);
-                    } else {
-                        showStatusMessage(`Error: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
-                });
-        }
-    );
-    
-    setupConfirmation('clear-logs', 'Clear System Logs', 
-        'Are you sure you want to clear all system logs? This cannot be undone.',
-        function() {
-            // Send clear logs request
-            fetch('/api/system/clear-logs', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showStatusMessage('System logs cleared', 'success');
-                    } else {
-                        showStatusMessage(`Error: ${data.message}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showStatusMessage(`Error: ${error.message}`, 'error');
-                });
-        }
-    );
-    
-    setupConfirmation('factory-reset', 'Factory Reset', 
-        'WARNING: This will reset all settings and erase all data. This cannot be undone!',
-        function() {
-            const confirmInput = document.getElementById('confirm-reset');
-            
-            if (confirmInput.value === 'RESET') {
-                // Send factory reset request
-                fetch('/api/system/factory-reset', { method: 'POST' })
+    // Set up confirmation handlers (move inside DOMContentLoaded)
+    document.addEventListener('DOMContentLoaded', function() {
+        setupConfirmation('system-restart', 'Restart System', 
+            'Are you sure you want to restart all nutetra services?', 
+            function() {
+                // Send restart services request
+                fetch('/api/system/restart', { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            showStatusMessage('Factory reset initiated. System will reboot.', 'success');
-                            
-                            setTimeout(() => {
-                                window.location.href = '/';
-                            }, 5000);
+                            showStatusMessage('System services restarting...', 'success');
                         } else {
                             showStatusMessage(`Error: ${data.message}`, 'error');
                         }
@@ -712,11 +649,98 @@
                     .catch(error => {
                         showStatusMessage(`Error: ${error.message}`, 'error');
                     });
-            } else {
-                showStatusMessage('Please type "RESET" to confirm factory reset', 'error');
             }
-        }
-    );
+        );
+        
+        setupConfirmation('system-reboot', 'Reboot Device', 
+            'Are you sure you want to reboot the Raspberry Pi? This will disconnect your session.',
+            function() {
+                // Send reboot request
+                fetch('/api/system/reboot', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatusMessage('Device is rebooting. Please wait...', 'success');
+                            
+                            // Show countdown to reconnect
+                            setTimeout(() => {
+                                document.body.innerHTML = '<div class="reboot-message">' +
+                                    '<h2>Device is rebooting</h2>' +
+                                    '<p>Please wait while the system restarts.</p>' +
+                                    '<p>This page will attempt to reconnect in <span id="countdown">60</span> seconds.</p>' +
+                                    '</div>';
+                                
+                                let countdown = 60;
+                                const countdownElement = document.getElementById('countdown');
+                                
+                                const interval = setInterval(() => {
+                                    countdown--;
+                                    countdownElement.textContent = countdown;
+                                    
+                                    if (countdown <= 0) {
+                                        clearInterval(interval);
+                                        window.location.reload();
+                                    }
+                                }, 1000);
+                            }, 2000);
+                        } else {
+                            showStatusMessage(`Error: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatusMessage(`Error: ${error.message}`, 'error');
+                    });
+            }
+        );
+        
+        setupConfirmation('clear-logs', 'Clear System Logs', 
+            'Are you sure you want to clear all system logs? This cannot be undone.',
+            function() {
+                // Send clear logs request
+                fetch('/api/system/clear-logs', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatusMessage('System logs cleared', 'success');
+                        } else {
+                            showStatusMessage(`Error: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatusMessage(`Error: ${error.message}`, 'error');
+                    });
+            }
+        );
+        
+        setupConfirmation('factory-reset', 'Factory Reset', 
+            'WARNING: This will reset all settings and erase all data. This cannot be undone!',
+            function() {
+                const confirmInput = document.getElementById('confirm-reset');
+                
+                if (confirmInput.value === 'RESET') {
+                    // Send factory reset request
+                    fetch('/api/system/factory-reset', { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                showStatusMessage('Factory reset initiated. System will reboot.', 'success');
+                                
+                                setTimeout(() => {
+                                    window.location.href = '/';
+                                }, 5000);
+                            } else {
+                                showStatusMessage(`Error: ${data.message}`, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            showStatusMessage(`Error: ${error.message}`, 'error');
+                        });
+                } else {
+                    showStatusMessage('Please type "RESET" to confirm factory reset', 'error');
+                }
+            }
+        );
+    });
     
     // Load system information
     function loadSystemInfo() {
@@ -755,115 +779,146 @@
     }
     
     // Save system name
-    document.getElementById('save-system-name').addEventListener('click', function() {
-        const newName = document.getElementById('new-system-name').value.trim();
-        
-        if (newName) {
-            fetch('/api/system/name', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name: newName }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatusMessage('System name updated', 'success');
-                    document.getElementById('system-name').textContent = newName;
+    document.addEventListener('DOMContentLoaded', function() {
+        const saveSystemNameBtn = document.getElementById('save-system-name');
+        if (saveSystemNameBtn) {
+            saveSystemNameBtn.addEventListener('click', function() {
+                const newName = document.getElementById('new-system-name').value.trim();
+                
+                if (newName) {
+                    fetch('/api/system/name', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name: newName }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatusMessage('System name updated', 'success');
+                            document.getElementById('system-name').textContent = newName;
+                        } else {
+                            showStatusMessage(`Error: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatusMessage(`Error: ${error.message}`, 'error');
+                    });
                 } else {
-                    showStatusMessage(`Error: ${data.message}`, 'error');
+                    showStatusMessage('System name cannot be empty', 'error');
                 }
-            })
-            .catch(error => {
-                showStatusMessage(`Error: ${error.message}`, 'error');
             });
         } else {
-            showStatusMessage('System name cannot be empty', 'error');
+            console.error("Save system name button not found");
         }
     });
 
     // Save GPIO settings
-    document.getElementById('save-gpio-settings').addEventListener('click', function() {
-        const chipNumber = document.getElementById('gpio-chip-select').value;
-        const library = document.getElementById('gpio-library').value;
-        
-        fetch('/api/system/gpio-settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-                gpio_chip: parseInt(chipNumber),
-                gpio_library: library
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showStatusMessage('GPIO settings updated. Restart services to apply changes.', 'success');
+    document.addEventListener('DOMContentLoaded', function() {
+        const saveGpioBtn = document.getElementById('save-gpio-settings');
+        if (saveGpioBtn) {
+            saveGpioBtn.addEventListener('click', function() {
+                const chipNumber = document.getElementById('gpio-chip-select').value;
+                const library = document.getElementById('gpio-library').value;
                 
-                // Update displayed info
-                document.getElementById('gpio-chip').textContent = `gpiochip${chipNumber}`;
-                document.getElementById('gpio-interface').textContent = library;
-            } else {
-                showStatusMessage(`Error: ${data.message}`, 'error');
-            }
-        })
-        .catch(error => {
-            showStatusMessage(`Error: ${error.message}`, 'error');
-        });
+                fetch('/api/system/gpio-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        gpio_chip: parseInt(chipNumber),
+                        gpio_library: library
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatusMessage('GPIO settings updated. Restart services to apply changes.', 'success');
+                        
+                        // Update displayed info
+                        document.getElementById('gpio-chip').textContent = `gpiochip${chipNumber}`;
+                        document.getElementById('gpio-interface').textContent = library;
+                    } else {
+                        showStatusMessage(`Error: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatusMessage(`Error: ${error.message}`, 'error');
+                });
+            });
+        } else {
+            console.error("Save GPIO settings button not found");
+        }
     });
     
     // Test GPIO
-    document.getElementById('test-gpio').addEventListener('click', function() {
-        fetch('/api/system/test-gpio', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatusMessage('GPIO test successful', 'success');
-                } else {
-                    showStatusMessage(`GPIO test failed: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                showStatusMessage(`Error: ${error.message}`, 'error');
+    document.addEventListener('DOMContentLoaded', function() {
+        const testGpioBtn = document.getElementById('test-gpio');
+        if (testGpioBtn) {
+            testGpioBtn.addEventListener('click', function() {
+                fetch('/api/system/test-gpio', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showStatusMessage('GPIO test successful', 'success');
+                        } else {
+                            showStatusMessage(`GPIO test failed: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showStatusMessage(`Error: ${error.message}`, 'error');
+                    });
             });
+        } else {
+            console.error("Test GPIO button not found");
+        }
     });
     
     // Save pin assignments
-    document.getElementById('save-pin-assignments').addEventListener('click', function() {
-        const pinAssignments = {
-            ph_up: parseInt(document.getElementById('ph-up-pin').value),
-            ph_down: parseInt(document.getElementById('ph-down-pin').value),
-            nutrient_a: parseInt(document.getElementById('nutrient-a-pin').value),
-            nutrient_b: parseInt(document.getElementById('nutrient-b-pin').value),
-            main: parseInt(document.getElementById('main-pump-pin').value),
-            i2c_bus: parseInt(document.getElementById('i2c-bus').value),
-            i2c_enabled: document.getElementById('i2c-enabled').checked
-        };
-        
-        fetch('/api/system/pin-assignments', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(pinAssignments),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showStatusMessage('Pin assignments saved. Restart services to apply changes.', 'success');
-            } else {
-                showStatusMessage(`Error: ${data.message}`, 'error');
-            }
-        })
-        .catch(error => {
-            showStatusMessage(`Error: ${error.message}`, 'error');
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        const savePinsBtn = document.getElementById('save-pin-assignments');
+        if (savePinsBtn) {
+            savePinsBtn.addEventListener('click', function() {
+                const pinAssignments = {
+                    ph_up: parseInt(document.getElementById('ph-up-pin').value),
+                    ph_down: parseInt(document.getElementById('ph-down-pin').value),
+                    nutrient_a: parseInt(document.getElementById('nutrient-a-pin').value),
+                    nutrient_b: parseInt(document.getElementById('nutrient-b-pin').value),
+                    main: parseInt(document.getElementById('main-pump-pin').value),
+                    i2c_bus: parseInt(document.getElementById('i2c-bus').value),
+                    i2c_enabled: document.getElementById('i2c-enabled').checked
+                };
+                
+                fetch('/api/system/pin-assignments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(pinAssignments),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatusMessage('Pin assignments saved. Restart services to apply changes.', 'success');
+                    } else {
+                        showStatusMessage(`Error: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatusMessage(`Error: ${error.message}`, 'error');
+                });
+            });
+        } else {
+            console.error("Save pin assignments button not found");
+        }
     });
     
-    // Initialize
-    loadSystemInfo();
+    // Initialize system info on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Loading system info");
+        loadSystemInfo();
+    });
 </script>
 {% endblock %} 
