@@ -560,18 +560,11 @@ footer {
     background-color: var(--light-bg);
 }
 
-/* Hide all tabcontent by default */
-.settings-container .tabcontent {
-    display: none !important;
+/* Basic tab content styles - visibility controlled by JS */
+.tabcontent {
+    animation: fadeIn 0.3s ease;
 }
 
-/* Show only the active tabcontent */
-.settings-container .tabcontent.active,
-.tabcontent[style*="display: block"] {
-    display: block !important;
-}
-
-/* Fade in animation for tab content */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

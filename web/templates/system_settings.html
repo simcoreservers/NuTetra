@@ -7,14 +7,20 @@
     <h2>System Settings</h2>
     
     <div class="settings-tabs">
-        <button class="tab-button" onclick="openTab(event, 'general-tab')" id="defaultOpen">General</button>
+        <button class="tab-button active" onclick="openTab(event, 'general-tab')" id="defaultOpen">General</button>
         <button class="tab-button" onclick="openTab(event, 'network-tab')">Network</button>
         <button class="tab-button" onclick="openTab(event, 'hardware-tab')">Hardware</button>
         <button class="tab-button" onclick="openTab(event, 'notification-tab')">Notifications</button>
         <button class="tab-button" onclick="openTab(event, 'backup-tab')">Backup/Restore</button>
     </div>
     
-    <div id="general-tab" class="tabcontent">
+    <!-- Debug Tools -->
+    <div style="position: absolute; right: 10px; top: 60px; z-index: 1000; border: 1px solid #ccc; padding: 5px; background: white;">
+        <button onclick="debugTab()">Debug Tabs</button>
+        <button onclick="forceGeneralTab()">Force General Tab</button>
+    </div>
+    
+    <div id="general-tab" class="tabcontent" style="display: none !important;">
         <div class="card">
             <h3>System Information</h3>
             <div class="info-grid">
@@ -111,7 +117,7 @@
         </div>
     </div>
     
-    <div id="network-tab" class="tabcontent">
+    <div id="network-tab" class="tabcontent" style="display: none !important;">
         <div class="card">
             <h3>Network Settings</h3>
             <div class="form-group">
@@ -217,7 +223,7 @@
         </div>
     </div>
     
-    <div id="hardware-tab" class="tabcontent">
+    <div id="hardware-tab" class="tabcontent" style="display: none !important;">
         <div class="card">
             <h3>Hardware Configuration</h3>
             <div class="hardware-info">
@@ -314,7 +320,7 @@
         </div>
     </div>
     
-    <div id="notification-tab" class="tabcontent">
+    <div id="notification-tab" class="tabcontent" style="display: none !important;">
         <div class="card">
             <h3>Email Notifications</h3>
             <div class="form-group">
@@ -411,7 +417,7 @@
         </div>
     </div>
     
-    <div id="backup-tab" class="tabcontent">
+    <div id="backup-tab" class="tabcontent" style="display: none !important;">
         <div class="card">
             <h3>System Backup</h3>
             <p>Back up your system configuration, sensor history, and custom settings.</p>
@@ -485,57 +491,77 @@
 
 {% block scripts %}
 <script>
-// Simple vanilla tab system
+// Simplified tab system that uses setAttribute instead of style properties
 function openTab(evt, tabName) {
     console.log("Opening tab:", tabName);
     
-    // Hide all tab content
-    var tabcontent = document.getElementsByClassName("tabcontent");
-    for (var i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-        tabcontent[i].classList.remove("active");
+    // Get all tabs and hide them by removing all attributes and setting style attribute
+    var tabs = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].setAttribute("style", "display: none !important");
     }
     
-    // Remove active class from all buttons
-    var tabbuttons = document.getElementsByClassName("tab-button");
-    for (var i = 0; i < tabbuttons.length; i++) {
-        tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+    // Reset all buttons
+    var buttons = document.getElementsByClassName("tab-button");
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].className = "tab-button";
     }
     
-    // Show the current tab and add an "active" class
-    var currentTab = document.getElementById(tabName);
-    if (currentTab) {
-        currentTab.style.display = "block";
-        currentTab.classList.add("active");
-        console.log("Tab displayed:", tabName);
+    // Show selected tab and activate button
+    var selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.setAttribute("style", "display: block !important");
+        evt.currentTarget.className = "tab-button active";
+        console.log("Activated tab:", tabName);
     } else {
         console.error("Tab not found:", tabName);
     }
-    
-    // Add active class to the button
-    evt.currentTarget.className += " active";
 }
 
-// Open the default tab on page load
+// Debug function to check tab visibility
+function debugTab() {
+    var tabs = document.getElementsByClassName("tabcontent");
+    console.clear();
+    console.log("--- TAB VISIBILITY DEBUG ---");
+    for (var i = 0; i < tabs.length; i++) {
+        var tab = tabs[i];
+        var computedStyle = window.getComputedStyle(tab);
+        console.log("Tab ID:", tab.id);
+        console.log("  - style attribute:", tab.getAttribute("style"));
+        console.log("  - computed display:", computedStyle.display);
+        console.log("  - offsetHeight:", tab.offsetHeight);
+        console.log("  - visibility:", computedStyle.visibility);
+        console.log("---------------------");
+    }
+}
+
+// Force general tab to appear
+function forceGeneralTab() {
+    var generalTab = document.getElementById("general-tab");
+    generalTab.style = "";
+    generalTab.setAttribute("style", "display: block !important; border: 3px solid red !important;");
+    console.log("Forced general tab visibility");
+}
+
+// Initialize tabs when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded - initializing tabs");
     
-    // Ensure all tabs are hidden initially with CSS
-    var style = document.createElement('style');
-    style.innerHTML = '.tabcontent { display: none !important; }';
-    document.head.appendChild(style);
+    // First forcibly hide all tabs with inline styles
+    var tabs = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].setAttribute("style", "display: none !important");
+        console.log("Initially hiding tab:", tabs[i].id);
+    }
     
-    // Click the default tab button
-    document.getElementById("defaultOpen").click();
-    console.log("Default tab clicked");
-    
-    // Double-check tab visibility
+    // Click the default tab button after a short delay
     setTimeout(function() {
-        var tabs = document.getElementsByClassName("tabcontent");
-        for (var i = 0; i < tabs.length; i++) {
-            console.log("Tab:", tabs[i].id, "Display:", getComputedStyle(tabs[i]).display);
-        }
-    }, 500);
+        document.getElementById("defaultOpen").click();
+        console.log("Default tab clicked");
+        
+        // Debug tab visibility
+        setTimeout(debugTab, 100);
+    }, 100);
 });
 </script>
 <script src="{{ url_for('static', filename='js/system_settings.js') }}"></script>
